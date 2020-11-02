@@ -19,3 +19,6 @@ Our code was tested using Ubuntu 16.04. and a virtual python envinronment includ
     numpy  1.16.4
     sympy  1.5.1
     matplotlib 3.1.0
+
+A preprint of the corresponding publication is available at [arXiv.org](https://arxiv.org). \
+Further details on the implemenation are provided in 
