@@ -20,5 +20,5 @@ Our code was tested using Ubuntu 16.04. and a virtual python envinronment includ
     sympy  1.5.1
     matplotlib 3.1.0
 
-A preprint of the corresponding publication is available at [arXiv.org](https://arxiv.org). \
+A preprint of the corresponding publication is available at [arXiv.org](https://arxiv.org/abs/2011.00563). \
 Further information on the implementation can be found in [docs/background_knowledge.pdf](docs/background_knowledge.pdf).
