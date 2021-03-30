@@ -1,8 +1,14 @@
 # ignore build directory
 build/
+klimits/build/
 
 # ignore pycache
 __pycache__/
+klimits/__pycache__/
+klimits/_klimits/__pycache__/
+klimits/_klimits/_klimits_module.c
+*.so
 *.pyc
 *.pyo
+.idea/
 
