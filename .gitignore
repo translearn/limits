@@ -1,6 +1,8 @@
 # ignore build directory
 build/
 klimits/build/
+dist/
+klimits.egg-info/
 
 # ignore pycache
 __pycache__/

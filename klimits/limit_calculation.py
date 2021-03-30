@@ -3,15 +3,14 @@
 # COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import inspect
 import math
-import os
 from multiprocessing import Pool
 import numpy as np
-
+import os
+import sys
+import inspect
+sys.path.append(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 from joint_limit_equations import JointLimitEquations
-
-currentDir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
 class PosVelJerkLimitation:

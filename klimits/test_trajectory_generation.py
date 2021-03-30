@@ -5,13 +5,17 @@
 # COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import numpy as np
-import json
 import argparse
-import limit_calculation
-import trajectory_plotter
-import timeit
+import json
 import logging
+import timeit
+import numpy as np
+import os
+import sys
+import inspect
+sys.path.append(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+from limit_calculation import PosVelJerkLimitation
+from trajectory_plotter import TrajectoryPlotter
 
 
 def denormalize(norm_value, value_range):
@@ -55,7 +59,6 @@ if __name__ == '__main__':
     parser.add_argument('--constant_action', type=float, default=None, help="a constant action [-1, 1] that "
                                                                             "is used at each decision step. If not "
                                                                             "specified, random actions are selected.")
-    parser.add_argument('--plot_actual_values', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -139,16 +142,17 @@ if __name__ == '__main__':
     vel_limits = [[vel_limit_factor * vel_limit[0], vel_limit_factor * vel_limit[1]] for vel_limit in vel_limits]
     pos_limits = [[pos_limit_factor * pos_limit[0], pos_limit_factor * pos_limit[1]] for pos_limit in pos_limits]
 
-    acc_limitation = limit_calculation.PosVelJerkLimitation(time_step=time_step,
-                                                            pos_limits=pos_limits, vel_limits=vel_limits,
-                                                            acc_limits=acc_limits, jerk_limits=jerk_limits)
+    acc_limitation = PosVelJerkLimitation(time_step=time_step,
+                                          pos_limits=pos_limits, vel_limits=vel_limits,
+                                          acc_limits=acc_limits, jerk_limits=jerk_limits)
 
-    trajectory_plotter = trajectory_plotter.TrajectoryPlotter(time_step=time_step,
-                                                              pos_limits=pos_limits, vel_limits=vel_limits,
-                                                              acc_limits=acc_limits,
-                                                              jerk_limits=jerk_limits,
-                                                              plot_joint=plot_joint,
-                                                              plot_safe_acc_limits=plot_safe_acc_limits)
+    trajectory_plotter = TrajectoryPlotter(time_step=time_step,
+                                           pos_limits=pos_limits,
+                                           vel_limits=vel_limits,
+                                           acc_limits=acc_limits,
+                                           jerk_limits=jerk_limits,
+                                           plot_joint=plot_joint,
+                                           plot_safe_acc_limits=plot_safe_acc_limits)
 
     current_position = [0 for _ in pos_limits]
     current_velocity = [0 for _ in vel_limits]

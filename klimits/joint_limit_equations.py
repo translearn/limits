@@ -4,7 +4,11 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import numpy as np
-from _klimits import _klimits
+import os
+import sys
+import inspect
+sys.path.append(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+import _klimits
 
 
 class JointLimitEquations:
