@@ -341,10 +341,10 @@ class PosVelJerkLimitation:
 
                         if t_star_min_jerk_phase >= 3 * t_s:
                             a_1_bounded_vel_continuous_min_jerk, t_u_bounded_vel_continuous_min_jerk = \
-                                self._joint_limit_equations.position_bounded_velocity_continuous_min_jerk_phase(j_min, j_max, a_0,
-                                                                                                          v_0,
-                                                                                                          p_0, p_max, t_s,
-                                                                                                          t_star_min_jerk_phase)
+                                self._joint_limit_equations.\
+                                    position_bounded_velocity_continuous_min_jerk_phase(j_min, j_max, a_0, v_0, p_0,
+                                                                                        p_max, t_s,
+                                                                                        t_star_min_jerk_phase)
 
                             if not math.isnan(t_u_bounded_vel_continuous_min_jerk) and \
                                     (t_u_bounded_vel_continuous_min_jerk / t_s) > 0.99:
