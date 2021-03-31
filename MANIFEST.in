@@ -1,0 +1,3 @@
+include klimits/_klimits/_klimits_code.h
+include klimits/_klimits/_klimits_module.pyx
+exclude klimits/_klimits/_klimits_module.c

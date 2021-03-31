@@ -7,7 +7,7 @@ with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'),
     readme_file = f.read()
 
 ext_mods = [Extension(
-    'klimits/_klimits', ['klimits/_klimits/_klimits_module.pyx', 'klimits/_klimits/_klimits_code.c'],
+    '_klimits', ['klimits/_klimits/_klimits_module.pyx', 'klimits/_klimits/_klimits_code.c'],
     include_dirs=[],
     library_dirs=[],
     libraries=[],
