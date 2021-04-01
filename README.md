@@ -29,3 +29,7 @@ for further details.
 
 A preprint of the corresponding publication is available at [arXiv.org](https://arxiv.org/abs/2011.00563). \
 Further information on the implementation can be found [here](https://www.researchgate.net/publication/350451653_Background_Knowledge_for_Learning_Robot_Trajectories_subject_to_Kinematic_Joint_Constraints).
+
+## Video
+
+[![Video](https://img.youtube.com/vi/JpkKCd9jyss/0.jpg)](https://www.youtube.com/watch?v=JpkKCd9jyss)

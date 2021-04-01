@@ -21,7 +21,7 @@ setup(name='klimits',
       author_email='jonas.kiemel@kit.edu',
       url='https://github.com/translearn/limits',
       description='An action space representation for learning robot trajectories without exceeding limits on the '
-                  'position, velocity, acceleration and jerk of each robot joint',
+                  'position, velocity, acceleration and jerk of each robot joint.',
       long_description=readme_file,
       long_description_content_type='text/markdown',
       install_requires=[
