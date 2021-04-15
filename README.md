@@ -10,7 +10,7 @@ The package can be installed by running
 
     pip install klimits
 
-## Trajectory Generation
+## Trajectory generation
 
 To generate a random trajectory with limited jerk, acceleration, velocity and position run
 
@@ -25,11 +25,16 @@ for further details.
 
 
 
-## Further Reading
+## Further reading
 
 A preprint of the corresponding publication is available at [arXiv.org](https://arxiv.org/abs/2011.00563). \
-Further information on the implementation can be found [here](https://www.researchgate.net/publication/350451653_Background_Knowledge_for_Learning_Robot_Trajectories_subject_to_Kinematic_Joint_Constraints).
+Further information on the implementation can be found [here](https://www.researchgate.net/publication/350451653_Background_Knowledge_for_Learning_Robot_Trajectories_subject_to_Kinematic_Joint_Constraints). \
+This library is used by [safeMotions](https://github.com/translearn/safemotions) to learn collision-free reaching tasks via reinforcement learning.
 
 ## Video
 
 [![Video](https://img.youtube.com/vi/JpkKCd9jyss/0.jpg)](https://www.youtube.com/watch?v=JpkKCd9jyss)
+
+## Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
