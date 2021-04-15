@@ -157,8 +157,9 @@ class PosVelJerkLimitation:
                             if current_acc == 0:
                                 acc_range_dynamic_vel[j] = 0
                             else:
-                                acc_range_dynamic_vel[j] = current_acc * (
-                                        1 - ((0.5 * current_acc * t_s) / (vel_limits[j] - current_vel)))
+                                with np.errstate(divide='ignore', invalid='ignore'):
+                                    acc_range_dynamic_vel[j] = current_acc * (
+                                            1 - ((0.5 * current_acc * t_s) / (vel_limits[j] - current_vel)))
 
                         else:
                             a = - jerk_limits[nj] / 2
