@@ -67,7 +67,7 @@ class TrajectoryPlotter:
 
         matplotlib.rcParams['pdf.fonttype'] = 42
         matplotlib.rcParams['ps.fonttype'] = 42
-        matplotlib.rcParams['text.usetex'] = True
+        matplotlib.rcParams['text.usetex'] = False
 
     @property
     def trajectory_time(self):
