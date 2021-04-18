@@ -11,3 +11,5 @@ jobs:
       - uses: actions/checkout@v2
       - name: build and upload manylinux wheels
         uses: Niraj-Kamdar/manylinux-wheel-builder@pre-build
+        with:
+          python-versions: "3.7"
