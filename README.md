@@ -30,7 +30,7 @@ for further details.
 
 ## Further reading
 
-A preprint of the corresponding publication is available at [arXiv.org](https://arxiv.org/abs/2011.00563). \
+A preprint of the corresponding ICRA 2021 publication is available at [arXiv.org](https://arxiv.org/abs/2011.00563). \
 Further information on the implementation can be found [here](https://www.researchgate.net/publication/350451653_Background_Knowledge_for_Learning_Robot_Trajectories_subject_to_Kinematic_Joint_Constraints). \
 This library is used by [safeMotions](https://github.com/translearn/safemotions) to learn collision-free reaching tasks via reinforcement learning.
 
