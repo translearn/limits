@@ -24,7 +24,7 @@ Run
 for further details.
 
 <p align="center">
-<img src="https://user-images.githubusercontent.com/51738372/116689339-43b5da00-a9b8-11eb-9775-193dec48e00f.png" width=60% height=60% alt="exemplary_trajectory">
+<img src="https://user-images.githubusercontent.com/51738372/116689339-43b5da00-a9b8-11eb-9775-193dec48e00f.png" width=80% height=80% alt="exemplary_trajectory">
 </p>
 
 
