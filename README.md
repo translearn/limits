@@ -23,6 +23,8 @@ Run
 
 for further details.
 
+<img src="https://user-images.githubusercontent.com/51738372/116689339-43b5da00-a9b8-11eb-9775-193dec48e00f.png" style="display: block;  width: 60%;" alt="exemplary_trajectory">
+
 
 
 ## Further reading

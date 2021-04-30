@@ -32,6 +32,7 @@ setup(name='klimits',
                   'position, velocity, acceleration and jerk of each robot joint.',
       long_description=readme_file,
       long_description_content_type='text/markdown',
+      license='MIT',
       install_requires=[
           'numpy',
           'matplotlib',
