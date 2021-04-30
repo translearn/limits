@@ -23,8 +23,9 @@ Run
 
 for further details.
 
-<img src="https://user-images.githubusercontent.com/51738372/116689339-43b5da00-a9b8-11eb-9775-193dec48e00f.png" style="display: block;  width: 60%;" alt="exemplary_trajectory">
-
+<p align="center">
+<img src="https://user-images.githubusercontent.com/51738372/116689339-43b5da00-a9b8-11eb-9775-193dec48e00f.png" style="max-width:60%;" alt="exemplary_trajectory">
+</p>
 
 
 ## Further reading
@@ -35,7 +36,11 @@ This library is used by [safeMotions](https://github.com/translearn/safemotions)
 
 ## Video
 
-[![Video](https://img.youtube.com/vi/JpkKCd9jyss/0.jpg)](https://www.youtube.com/watch?v=JpkKCd9jyss)
+<p align="center">
+<a href="https://www.youtube.com/watch?v=JpkKCd9jyss">
+<img src="https://img.youtube.com/vi/JpkKCd9jyss/0.jpg" alt="video">
+</a>
+</p>
 
 ## Disclaimer
 
