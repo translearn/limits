@@ -28,7 +28,8 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument('--time_step', type=float, default=0.050, help="time between network predictions "
-                                                                       "(time_step = 1 / prediction_frequency)")
+                                                                       "(time_step = 1 / prediction_frequency)"
+                                                                       ", default: %(default)s")
     parser.add_argument('--pos_limits', type=json.loads, default=None, help="pos_limits[num_joint][min/max] e.g. "
                                                                             "'[[-2.96705972839, 2.96705972839],"
                                                                             " [-2.09439510239, 2.09439510239]]'")
@@ -41,24 +42,30 @@ if __name__ == '__main__':
                                                                             "corresponding joint e.g. '[1, 0]'")
     parser.add_argument('--pos_limit_factor', type=float, default=1.0, help="pos_limits are multiplied with "
                                                                             "the specified "
-                                                                            "pos_limit_factor (0.0, 1.0]")
+                                                                            "pos_limit_factor (0.0, 1.0], "
+                                                                            "default: %(default)s")
     parser.add_argument('--vel_limit_factor', type=float, default=1.0, help="vel_limits are multiplied with "
                                                                             "the specified "
-                                                                            "vel_limit_factor (0.0, 1.0]")
+                                                                            "vel_limit_factor (0.0, 1.0], "
+                                                                            "default: %(default)s")
     parser.add_argument('--acc_limit_factor', type=float, default=1.0, help="acc_limits are multiplied with "
                                                                             "the specified "
-                                                                            "acc_limit_factor (0.0, 1.0]")
+                                                                            "acc_limit_factor (0.0, 1.0], "
+                                                                            "default: %(default)s")
     parser.add_argument('--jerk_limit_factor', type=float, default=1.0, help="max_jerks are multiplied with "
                                                                              "the specified "
-                                                                             "jerk_limit_factor (0.0, 1.0]")
+                                                                             "jerk_limit_factor (0.0, 1.0], "
+                                                                             "default: %(default)s")
     parser.add_argument('--trajectory_duration', type=float, default=10.0, help="duration of the generated trajectory "
-                                                                                "in seconds")
+                                                                                "in seconds, default: %(default)s")
     parser.add_argument('--plot_safe_acc_limits', action='store_true', default=False, help="plot the range of safe "
                                                                                            "accelerations with dashed "
                                                                                            "lines")
     parser.add_argument('--constant_action', type=float, default=None, help="a constant action [-1, 1] that "
                                                                             "is used at each decision step. If not "
-                                                                            "specified, random actions are selected.")
+                                                                            "specified, random actions are selected")
+    parser.add_argument('--seed', type=int, default=None, help="seed the generator of random actions with an integer "
+                                                               "(for debugging purposes)")
 
     args = parser.parse_args()
 
@@ -130,6 +137,8 @@ if __name__ == '__main__':
         use_random_actions = True
         # if True: actions to generate the trajectory are randomly sampled
         # if False: the constant action stored in constant_action is used at each decision step
+        if args.seed is not None:
+            np.random.seed(args.seed)
     else:
         use_random_actions = False
         constant_action = args.constant_action  # scalar within [-1, 1]

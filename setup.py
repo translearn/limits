@@ -19,11 +19,11 @@ ext_mods = [Extension(
     include_dirs=[],
     library_dirs=[],
     libraries=[],
-    extra_compile_args=['-std=c99'] + os_extra_compile_args,
+    extra_compile_args=['-O3', '-std=c99'] + os_extra_compile_args,
     extra_link_args=[] + os_extra_link_args
 )]
 setup(name='klimits',
-      version='1.0.2',
+      version='1.0.3',
       packages=['klimits'],
       author='Jonas C. Kiemel',
       author_email='jonas.kiemel@kit.edu',
