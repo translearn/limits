@@ -16,12 +16,14 @@ To generate a random trajectory with limited jerk, acceleration, velocity and po
 
     python -m klimits.test_trajectory_generation
 
-Several parameters can be adjusted to modify the generated trajectory.
+Several parameters can be adjusted to modify the generated trajectory. E.g:
+
+    python -m klimits.test_trajectory_generation --time_step=0.1 --pos_limits='[[-2.96705972839, 2.96705972839], [-2.09439510239, 2.09439510239]]' --vel_limits='[[-1.71042266695, 1.71042266695], [-1.71042266695, 1.71042266695]]' --acc_limits='[[-15, 15], [-7.5, 7.5]]' --plot_joint='[1, 0]' --pos_limit_factor=0.9 --vel_limit_factor=0.8 --acc_limit_factor=0.7 --jerk_limit_factor=0.6 --trajectory_duration=20 --plot_safe_acc_limits 
 Run
 
     python -m klimits.test_trajectory_generation --help
 
-for further details.
+for further details on the optional arguments.
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/51738372/116689339-43b5da00-a9b8-11eb-9775-193dec48e00f.png" width=80% height=80% alt="exemplary_trajectory">

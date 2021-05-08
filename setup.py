@@ -33,6 +33,7 @@ setup(name='klimits',
       long_description=readme_file,
       long_description_content_type='text/markdown',
       license='MIT',
+      classifiers=["License :: OSI Approved :: MIT License", "Intended Audience :: Developers"],
       install_requires=[
           'numpy',
           'matplotlib',
