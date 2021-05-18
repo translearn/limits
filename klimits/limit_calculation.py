@@ -202,6 +202,10 @@ class PosVelJerkLimitation:
 
         acc_range_dynamic_pos = [-10 ** 6, 10 ** 6]
 
+        if limit_position and (np.isnan(pos_limits[0]) or np.isnan(pos_limits[1])):
+            # continuous joint -> no position limitation required
+            limit_position = False
+
         if limit_position:
             for j in range(2):
                 nj = (j + 1) % 2

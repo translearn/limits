@@ -23,7 +23,7 @@ ext_mods = [Extension(
     extra_link_args=[] + os_extra_link_args
 )]
 setup(name='klimits',
-      version='1.0.3',
+      version='1.0.4',
       packages=['klimits'],
       author='Jonas C. Kiemel',
       author_email='jonas.kiemel@kit.edu',
