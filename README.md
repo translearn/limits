@@ -1,4 +1,6 @@
 # Learning Robot Trajectories subject to Kinematic Joint Constraints
+[![ICRA 2021](https://img.shields.io/badge/ICRA-2021-%3C%3E)](https://www.ieee-icra.org/)
+[![arXiv](https://img.shields.io/badge/arXiv-2011.00563-b31b1b)](https://arxiv.org/abs/2011.00563)
 [![PyPI version](https://img.shields.io/pypi/v/klimits)](https://pypi.python.org/pypi/klimits/)
 [![PyPI license](https://img.shields.io/pypi/l/klimits)](https://pypi.python.org/pypi/klimits)
 [![GitHub issues](https://img.shields.io/github/issues/translearn/limits)](https://github.com/translearn/limits/issues/)
