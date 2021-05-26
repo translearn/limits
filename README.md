@@ -45,8 +45,8 @@ This library is used by [safeMotions](https://github.com/translearn/safemotions)
 ## Video
 
 <p align="center">
-<a href="https://www.youtube.com/watch?v=JpkKCd9jyss">
-<img src="https://img.youtube.com/vi/JpkKCd9jyss/0.jpg" alt="video">
+<a href="https://www.youtube.com/watch?v=pzXOxE7y7ws">
+<img src="https://img.youtube.com/vi/pzXOxE7y7ws/0.jpg" alt="video">
 </a>
 </p>
 
