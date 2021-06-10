@@ -220,7 +220,7 @@ class JointLimitEquations:
     def position_bounded_velocity_continuous_all_phases(self, j_min_in, j_max_in, a_0_in, a_min_in, v_0_in, p_0_in,
                                                         p_max_in, t_s_in, t_star_in, t_n_a_min_in):
 
-        compute_a_1 = True
+        compute_a_1 = False
         t_u_out = self._t_u_position_bounded_velocity_continuous_all_phases(j_min_in, j_max_in, a_0_in, a_min_in,
                                                                             v_0_in,
                                                                             p_0_in, p_max_in, t_s_in, t_star_in,
@@ -262,7 +262,7 @@ class JointLimitEquations:
     def position_bounded_velocity_continuous_min_jerk_phase(self, j_min_in, j_max_in, a_0_in, v_0_in, p_0_in, p_max_in,
                                                             t_s_in, t_star_in):
 
-        compute_a_1 = True
+        compute_a_1 = False
         t_u_out = self._t_u_position_bounded_velocity_continuous_min_jerk_phase(j_min_in, j_max_in, a_0_in, v_0_in,
                                                                                 p_0_in, p_max_in, t_s_in, t_star_in)
 

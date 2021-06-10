@@ -3,12 +3,14 @@
 # COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import inspect
 import math
-from multiprocessing import Pool
-import numpy as np
 import os
 import sys
-import inspect
+from multiprocessing import Pool
+
+import numpy as np
+
 sys.path.append(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 from joint_limit_equations import JointLimitEquations
 
@@ -27,14 +29,16 @@ class PosVelJerkLimitation:
                  num_workers=1,
                  soft_velocity_limits=False,
                  soft_position_limits=False,
+                 normalize_acc_range=True,
                  *vargs,
                  **kwargs):
 
         self._time_step = time_step
-        self._pos_limits = pos_limits
         self._vel_limits = vel_limits
         self._num_joints = len(self._vel_limits)
+        self._pos_limits = pos_limits if pos_limits is not None else [None] * self._num_joints
         self._acc_limits = acc_limits
+        self._acc_limits_min_max = np.swapaxes(acc_limits, 0, 1)
         self._jerk_limits = jerk_limits
 
         self._acceleration_after_max_vel_limit_factor = acceleration_after_max_vel_limit_factor
@@ -43,6 +47,7 @@ class PosVelJerkLimitation:
         self._limit_position = limit_position
         self._soft_velocity_limits = soft_velocity_limits
         self._soft_position_limits = soft_position_limits
+        self._normalize_acc_range = normalize_acc_range
 
         self._worker_pool = None
         self._joint_limit_equations = JointLimitEquations()
@@ -85,52 +90,61 @@ class PosVelJerkLimitation:
         self._acc_limits = acc_limits
 
     def calculate_valid_acceleration_range(self, current_pos, current_vel, current_acc, braking_trajectory=False,
-                                           time_step_counter=0):
+                                           time_step_counter=0, limit_min_max=None, **kwargs):
+        if limit_min_max is None:
+            limit_min_max = [(1.0, 1.0)] * self._num_joints
+        pos = current_pos if current_pos is not None else [None] * self._num_joints
 
         if self._worker_pool:
             pool_result = self._worker_pool.starmap(self._calculate_valid_acceleration_range_per_joint,
                                                     [(
-                                                     i, self._time_step, current_pos[i], current_vel[i], current_acc[i],
+                                                     i, self._time_step, pos[i], current_vel[i], current_acc[i],
                                                      self._pos_limits[i], self._vel_limits[i], self._acc_limits[i],
                                                      self._jerk_limits[i],
                                                      self._acceleration_after_max_vel_limit_factor,
                                                      self._set_velocity_after_max_pos_to_zero,
                                                      self._limit_velocity, self._limit_position, braking_trajectory,
-                                                     time_step_counter)
+                                                     time_step_counter, limit_min_max[i])
                                                      for i in range(self._num_joints)])
 
             pool_result = np.swapaxes(pool_result, 0, 1)
-            norm_acc_range = pool_result[0]
+            acc_range = pool_result[0]
             limit_violation = pool_result[1]
 
         else:
-            norm_acc_range = []
+            acc_range = []
             limit_violation = []
 
             for i in range(self._num_joints):
-                pos = current_pos[i] if current_pos is not None else None
-                pos_limits = self._pos_limits[i] if self._pos_limits is not None else None
-                norm_acc_range_joint, limit_violation_joint = \
-                    self._calculate_valid_acceleration_range_per_joint(i, self._time_step, pos, current_vel[i],
-                                                                       current_acc[i], pos_limits, self._vel_limits[i],
-                                                                       self._acc_limits[i], self._jerk_limits[i],
+                acc_range_joint, limit_violation_joint = \
+                    self._calculate_valid_acceleration_range_per_joint(i, self._time_step, pos[i], current_vel[i],
+                                                                       current_acc[i], self._pos_limits[i],
+                                                                       self._vel_limits[i], self._acc_limits[i],
+                                                                       self._jerk_limits[i],
                                                                        self._acceleration_after_max_vel_limit_factor,
                                                                        self._set_velocity_after_max_pos_to_zero,
                                                                        self._limit_velocity, self._limit_position,
-                                                                       braking_trajectory,
-                                                                       time_step_counter)
+                                                                       braking_trajectory, time_step_counter,
+                                                                       limit_min_max[i])
 
-                norm_acc_range.append(norm_acc_range_joint)
+                acc_range.append(acc_range_joint)
                 limit_violation.append(limit_violation_joint)
 
-        return norm_acc_range, limit_violation
+        if self._normalize_acc_range:
+            acc_range_min_max = np.swapaxes(acc_range, 0, 1)
+            acc_range_min_max = normalize(acc_range_min_max, self._acc_limits_min_max)
+            acc_range = np.swapaxes(acc_range_min_max, 0, 1)
+
+        return acc_range, limit_violation
 
     def _calculate_valid_acceleration_range_per_joint(self, joint_index, t_s, current_pos, current_vel, current_acc,
                                                       pos_limits, vel_limits, acc_limits, jerk_limits,
                                                       acceleration_after_max_vel_limit_factor,
                                                       set_velocity_after_max_pos_to_zero=False,
                                                       limit_velocity=True, limit_position=True,
-                                                      braking_trajectory=False, time_step_counter=0):
+                                                      braking_trajectory=False,
+                                                      time_step_counter=0,
+                                                      limit_min_max=(1, 1)):
 
         acc_range_jerk = [current_acc + jerk_limits[0] * t_s,
                           current_acc + jerk_limits[1] * t_s]
@@ -139,17 +153,18 @@ class PosVelJerkLimitation:
         acc_range_dynamic_vel = [acc_limits[0], acc_limits[1]]
 
         if limit_velocity:
-            if (current_acc < 0 and (
-                    current_vel < vel_limits[0] + 0.5 * (current_acc ** 2 * t_s) / (acc_limits[1] - current_acc))) \
-                    and not braking_trajectory:
+            if not braking_trajectory and (current_acc < 0 and (
+                    current_vel < vel_limits[0] + 0.5 * (current_acc ** 2 * t_s) / (acc_limits[1] - current_acc))):
                 acc_range_dynamic_vel = [acc_limits[1], acc_limits[1]]
             else:
-                if (current_acc > 0 and (
+                if not braking_trajectory and (current_acc > 0 and (
                         current_vel > vel_limits[1] - 0.5 * (current_acc ** 2 * t_s) / (
-                        current_acc - acc_limits[0]))) and not braking_trajectory:
+                        current_acc - acc_limits[0]))):
                     acc_range_dynamic_vel = [acc_limits[0], acc_limits[0]]
                 else:
                     for j in range(2):
+                        if not limit_min_max[j]:
+                            continue
                         nj = (j + 1) % 2
                         if (j == 0 and (current_vel + 0.5 * current_acc * t_s) <= vel_limits[0]) \
                                 or (j == 1 and (current_vel + 0.5 * current_acc * t_s) >= vel_limits[1]):
@@ -208,6 +223,8 @@ class PosVelJerkLimitation:
 
         if limit_position:
             for j in range(2):
+                if not limit_min_max[j]:
+                    continue
                 nj = (j + 1) % 2
                 a_min = acc_limits[nj]
                 j_min = jerk_limits[nj]
@@ -278,7 +295,7 @@ class PosVelJerkLimitation:
 
                             if set_velocity_after_max_pos_to_zero:
                                 t_star_all_phases = t_s * np.ceil(t_v0_all_phases / t_s)
-                                a_1_bounded_vel_continuous_all_phases, t_u_bounded_vel_continuous_all_phases = \
+                                _, t_u_bounded_vel_continuous_all_phases = \
                                     self._joint_limit_equations. \
                                         position_bounded_velocity_continuous_all_phases(j_min, j_max, a_0, a_min, v_0,
                                                                                         p_0, p_max, t_s,
@@ -345,7 +362,7 @@ class PosVelJerkLimitation:
                             t_v0_bounded_vel_min_jerk_phase / t_s)
 
                         if t_star_min_jerk_phase >= 3 * t_s:
-                            a_1_bounded_vel_continuous_min_jerk, t_u_bounded_vel_continuous_min_jerk = \
+                            _, t_u_bounded_vel_continuous_min_jerk = \
                                 self._joint_limit_equations.\
                                     position_bounded_velocity_continuous_min_jerk_phase(j_min, j_max, a_0, v_0, p_0,
                                                                                         p_max, t_s,
@@ -440,10 +457,9 @@ class PosVelJerkLimitation:
                     if (acc_range_total[0] - acc_range_total[1]) > 0:
                         acc_range_total[1] = acc_range_total[0]
 
-        norm_acc_range_joint = [normalize(accLimit, acc_limits) for accLimit in acc_range_total]
-        norm_acc_range_joint = list(np.clip(norm_acc_range_joint, -1, 1))
+        acc_range_joint = np.clip(acc_range_total, acc_limits[0], acc_limits[1])
 
-        return norm_acc_range_joint, limit_violation_code
+        return acc_range_joint, limit_violation_code
 
 
 def normalize(value, value_range):
