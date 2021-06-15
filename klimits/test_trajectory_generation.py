@@ -14,14 +14,12 @@ import os
 import sys
 import inspect
 sys.path.append(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+
 from limit_calculation import PosVelJerkLimitation
 from trajectory_plotter import TrajectoryPlotter
-
-
-def denormalize(norm_value, value_range):
-    actual_value = value_range[0] + 0.5 * (norm_value + 1) * (value_range[1] - value_range[0])
-    return actual_value
-
+from klimits import denormalize
+from klimits import calculate_end_position_parallel as calculate_end_position
+from klimits import calculate_end_velocity_parallel as calculate_end_velocity
 
 if __name__ == '__main__':
     logging.basicConfig()
@@ -96,13 +94,13 @@ if __name__ == '__main__':
         vel_limits = args.vel_limits
 
     if args.acc_limits is None:
-        acc_limits = [[-15, 15],  # min, max Joint 1 in rad/s^2
+        acc_limits = [[-15.0, 15.0],  # min, max Joint 1 in rad/s^2
                       [-7.5, 7.5],
-                      [-10, 10],
+                      [-10.0, 10.0],
                       [-12.5, 12.5],
-                      [-15, 15],
-                      [-20, 20],
-                      [-20, 20]]  # min, max Joint 7 in rad/s^2
+                      [-15.0, 15.0],
+                      [-20.0, 20.0],
+                      [-20.0, 20.0]]  # min, max Joint 7 in rad/s^2
     else:
         acc_limits = args.acc_limits
 
@@ -153,7 +151,8 @@ if __name__ == '__main__':
 
     acc_limitation = PosVelJerkLimitation(time_step=time_step,
                                           pos_limits=pos_limits, vel_limits=vel_limits,
-                                          acc_limits=acc_limits, jerk_limits=jerk_limits)
+                                          acc_limits=acc_limits, jerk_limits=jerk_limits,
+                                          normalize_acc_range=False)
 
     trajectory_plotter = TrajectoryPlotter(time_step=time_step,
                                            pos_limits=pos_limits,
@@ -163,9 +162,9 @@ if __name__ == '__main__':
                                            plot_joint=plot_joint,
                                            plot_safe_acc_limits=plot_safe_acc_limits)
 
-    current_position = [0 for _ in pos_limits]
-    current_velocity = [0 for _ in vel_limits]
-    current_acceleration = [0 for _ in acc_limits]
+    current_position = np.zeros(len(pos_limits))
+    current_velocity = np.zeros(len(vel_limits))
+    current_acceleration = np.zeros(len(acc_limits))
 
     trajectory_plotter.reset_plotter(current_position)
 
@@ -178,28 +177,20 @@ if __name__ == '__main__':
         safe_action_range, _ = acc_limitation.calculate_valid_acceleration_range(current_position,
                                                                                  current_velocity,
                                                                                  current_acceleration)
-
         # generate actions in range [-1, 1] for each joint
         # Note: Action calculation is normally performed by a neural network
         if use_random_actions:
-            action = [np.random.uniform(low=-1, high=1) for _ in pos_limits]
+            action = np.random.uniform(low=-1, high=1, size=len(pos_limits))
         else:
-            action = [constant_action for _ in pos_limits]
+            action = np.full(shape=len(pos_limits), fill_value=constant_action)
 
-        safe_action = np.array([safe_action_range[i][0] + 0.5 * (action[i] + 1) *
-                                (safe_action_range[i][1] - safe_action_range[i][0])
-                                for i in range(len(action))])
+        next_acceleration = denormalize(action, safe_action_range.T)
 
-        trajectory_plotter.add_data_point(safe_action, safe_action_range)
+        trajectory_plotter.add_data_point(next_acceleration, safe_action_range)
 
-        next_acceleration = [denormalize(safe_action[k], acc_limits[k]) for k in range(len(safe_action))]
-
-        next_position = [current_position[k] + current_velocity[k] * time_step +
-                         (1 / 3 * current_acceleration[k] + 1 / 6 * next_acceleration[k]) * time_step ** 2
-                         for k in range(len(current_position))]
-
-        next_velocity = [current_velocity[k] + 0.5 * time_step * (current_acceleration[k] + next_acceleration[k])
-                         for k in range(len(current_velocity))]
+        next_position = calculate_end_position(current_acceleration, next_acceleration, current_velocity,
+                                               current_position, time_step)
+        next_velocity = calculate_end_velocity(current_acceleration, next_acceleration, current_velocity, time_step)
 
         current_position = next_position
         current_velocity = next_velocity

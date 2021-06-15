@@ -134,6 +134,8 @@ class PosVelJerkLimitation:
             acc_range_min_max = np.swapaxes(acc_range, 0, 1)
             acc_range_min_max = normalize(acc_range_min_max, self._acc_limits_min_max)
             acc_range = np.swapaxes(acc_range_min_max, 0, 1)
+        else:
+            acc_range = np.array(acc_range)
 
         return acc_range, limit_violation
 

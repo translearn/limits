@@ -8,6 +8,11 @@ import logging
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from klimits import normalize_parallel as normalize
+from klimits import normalize_batch_parallel as normalize_batch
+from klimits import interpolate_position_batch_parallel as interpolate_position_batch
+from klimits import interpolate_velocity_batch_parallel as interpolate_velocity_batch
+from klimits import interpolate_acceleration_batch_parallel as interpolate_acceleration_batch
 
 
 class TrajectoryPlotter:
@@ -46,10 +51,14 @@ class TrajectoryPlotter:
         self._sub_acc = None
         self._sub_jerk = None
 
-        self._pos_limits = pos_limits
-        self._vel_limits = vel_limits
-        self._acc_limits = acc_limits
-        self._jerk_limits = jerk_limits
+        self._pos_limits = np.array(pos_limits)
+        self._pos_limits_min_max = np.swapaxes(self._pos_limits, 0, 1)
+        self._vel_limits = np.array(vel_limits)
+        self._vel_limits_min_max = np.swapaxes(self._vel_limits, 0, 1)
+        self._acc_limits = np.array(acc_limits)
+        self._acc_limits_min_max = np.swapaxes(self._acc_limits, 0, 1)
+        self._jerk_limits = np.array(jerk_limits)
+        self._jerk_limits_min_max = np.swapaxes(self._jerk_limits, 0, 1)
 
         self._num_joints = len(self._pos_limits)
 
@@ -59,7 +68,7 @@ class TrajectoryPlotter:
             self._plotJoint = plot_joint
 
         self._episode_counter = 0
-        self._zero_vector = [0 for _ in range(self._num_joints)]
+        self._zero_vector = [0.0 for _ in range(self._num_joints)]
 
         self._current_acc_limits = None
 
@@ -78,9 +87,9 @@ class TrajectoryPlotter:
         self._time_step_counter = 0
         self._episode_counter = self._episode_counter + 1
 
-        self._current_acc = self._zero_vector.copy()
-        self._current_vel = self._zero_vector.copy()
-        self._current_pos = initial_joint_position.copy()
+        self._current_acc = np.array(self._zero_vector.copy())
+        self._current_vel = np.array(self._zero_vector.copy())
+        self._current_pos = np.array(initial_joint_position.copy())
 
         self._pos = []
         self._vel = []
@@ -89,22 +98,17 @@ class TrajectoryPlotter:
         self._current_acc_limits = []
         self._current_acc_limits.append([[0, 0] for _ in range(self._num_joints)])
 
-        self._sub_pos = []
-        self._sub_vel = []
-        self._sub_acc = []
-        self._sub_jerk = []
-
         self._time = [0]
-        self._pos.append([normalize(self._current_pos[i], self._pos_limits[i]) for i in range(len(self._current_pos))])
-        self._vel.append([normalize(self._current_vel[i], self._vel_limits[i]) for i in range(len(self._current_vel))])
-        self._acc.append([normalize(self._current_acc[i], self._acc_limits[i]) for i in range(len(self._current_acc))])
+        self._pos.append(normalize(self._current_pos, self._pos_limits_min_max))
+        self._vel.append(normalize(self._current_vel, self._vel_limits_min_max))
+        self._acc.append(normalize(self._current_acc, self._acc_limits_min_max))
         self._jerk.append(self._zero_vector.copy())  
 
         self._sub_time = [0]
-        self._sub_pos.append(self._pos[0].copy())
-        self._sub_vel.append(self._vel[0].copy())
-        self._sub_acc.append(self._acc[0].copy())
-        self._sub_jerk.append(self._jerk[0].copy())
+        self._sub_pos = self._pos.copy()
+        self._sub_vel = self._vel.copy()
+        self._sub_acc = self._acc.copy()
+        self._sub_jerk = self._jerk.copy()
 
     def display_plot(self, max_time=None):
 
@@ -219,61 +223,47 @@ class TrajectoryPlotter:
         fig.set_size_inches((24.1, 13.5), forward=False)
         plt.show()
 
-    def add_data_point(self, normalized_acc, normalized_acc_range=None):
+    def add_data_point(self, current_acc, acc_range=None):
         self._time.append(self._time[-1] + self._time_step)
         last_acc = self._current_acc.copy()
         last_vel = self._current_vel.copy()
         last_pos = self._current_pos.copy()
-        self._current_acc = [denormalize(normalized_acc[k], self._acc_limits[k]) for k in
-                             range(len(normalized_acc))]
-        self._current_jerk = [(self._current_acc[k] - last_acc[k]) / self._time_step
-                              for k in range(len(self._current_acc))]
-        self._current_vel = [last_vel[k] + 0.5 * self._time_step * (last_acc[k] + self._current_acc[k])
-                             for k in range(len(self._current_vel))]
-        self._current_pos = [self._current_pos[k] + last_vel[k] * self._time_step
-                             + (1 / 3 * last_acc[k] + 1 / 6 * self._current_acc[k]) * self._time_step ** 2
-                             for k in range(len(self._current_pos))]
+        self._current_acc = current_acc
+        self._current_jerk = (self._current_acc - last_acc) / self._time_step
+        self._jerk.append(normalize(self._current_jerk, self._jerk_limits_min_max))
 
-        self._pos.append([normalize(self._current_pos[k], self._pos_limits[k])
-                          for k in range(len(self._current_pos))])
-
-        self._vel.append([normalize(self._current_vel[k], self._vel_limits[k])
-                          for k in range(len(self._current_vel))])
-
-        self._jerk.append([normalize(self._current_jerk[k], self._jerk_limits[k])
-                           for k in range(len(self._current_jerk))])
-
-        self._acc.append(normalized_acc.tolist())
-        self._current_acc_limits.append(normalized_acc_range)
+        self._current_acc_limits.append(normalize_batch(acc_range.T, self._acc_limits_min_max).T)
 
         for j in range(1, self._plot_num_sub_time_steps + 1):
-            t = j / self._plot_num_sub_time_steps * self._time_step
-            self._sub_time.append(self._time_step_counter * self._time_step + t)
             self._sub_jerk.append(self._jerk[-1])
-            sub_current_acc = [last_acc[k] + ((self._current_acc[k] - last_acc[k]) / self._time_step) * t
-                               for k in range(len(self._current_acc))]
-            sub_current_vel = [last_vel[k] + last_acc[k] * t +
-                               0.5 * ((self._current_acc[k] - last_acc[k]) / self._time_step) * t ** 2
-                               for k in range(len(self._current_vel))]
-            sub_current_pos = [last_pos[k] + last_vel[k] * t + 0.5 * last_acc[k] * t ** 2 +
-                               1 / 6 * ((self._current_acc[k] - last_acc[k]) / self._time_step) * t ** 3
-                               for k in range(len(self._current_pos))]
+        time_since_start = np.linspace(self._time_step / self._plot_num_sub_time_steps, self._time_step,
+                                       self._plot_num_sub_time_steps)
+        self._sub_time.extend(list(time_since_start + self._time_step_counter * self._time_step ))
+        sub_current_acc = interpolate_acceleration_batch(last_acc, self._current_acc, time_since_start, self._time_step)
+        sub_current_vel = interpolate_velocity_batch(last_acc, self._current_acc, last_vel, time_since_start,
+                                                     self._time_step)
+        sub_current_pos = interpolate_position_batch(last_acc, self._current_acc, last_vel, last_pos, time_since_start,
+                                                     self._time_step)
 
-            self._sub_acc.append([normalize(sub_current_acc[k], self._acc_limits[k])
-                                  for k in range(len(sub_current_acc))])
-            self._sub_vel.append([normalize(sub_current_vel[k], self._vel_limits[k])
-                                  for k in range(len(sub_current_vel))])
-            self._sub_pos.append([normalize(sub_current_pos[k], self._pos_limits[k])
-                                  for k in range(len(sub_current_pos))])
+        self._current_vel = sub_current_vel[-1]
+        self._current_pos = sub_current_pos[-1]
+
+        self._sub_acc.extend(list(normalize_batch(sub_current_acc, self._acc_limits_min_max)))
+        self._sub_vel.extend(list(normalize_batch(sub_current_vel, self._vel_limits_min_max)))
+        self._sub_pos.extend(list(normalize_batch(sub_current_pos, self._pos_limits_min_max)))
+
+        self._acc.append(self._sub_acc[-1])
+        self._vel.append(self._sub_vel[-1])
+        self._pos.append(self._sub_pos[-1])
 
         self._time_step_counter = self._time_step_counter + 1
 
 
-def normalize(value, value_range):
+def normalize_slow(value, value_range):
     normalized_value = -1 + 2 * (value - value_range[0]) / (value_range[1] - value_range[0])
     return normalized_value
 
 
-def denormalize(norm_value, value_range):
+def denormalize_slow(norm_value, value_range):
     actual_value = value_range[0] + 0.5 * (norm_value + 1) * (value_range[1] - value_range[0])
     return actual_value
