@@ -8,11 +8,11 @@ import logging
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from klimits import normalize_parallel as normalize
-from klimits import normalize_batch_parallel as normalize_batch
-from klimits import interpolate_position_batch_parallel as interpolate_position_batch
-from klimits import interpolate_velocity_batch_parallel as interpolate_velocity_batch
-from klimits import interpolate_acceleration_batch_parallel as interpolate_acceleration_batch
+from klimits import normalize as normalize
+from klimits import normalize_batch as normalize_batch
+from klimits import interpolate_position_batch as interpolate_position_batch
+from klimits import interpolate_velocity_batch as interpolate_velocity_batch
+from klimits import interpolate_acceleration_batch as interpolate_acceleration_batch
 
 
 class TrajectoryPlotter:

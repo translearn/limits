@@ -18,8 +18,8 @@ sys.path.append(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentf
 from limit_calculation import PosVelJerkLimitation
 from trajectory_plotter import TrajectoryPlotter
 from klimits import denormalize
-from klimits import calculate_end_position_parallel as calculate_end_position
-from klimits import calculate_end_velocity_parallel as calculate_end_velocity
+from klimits import calculate_end_position as calculate_end_position
+from klimits import calculate_end_velocity as calculate_end_velocity
 
 if __name__ == '__main__':
     logging.basicConfig()
