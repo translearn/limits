@@ -68,7 +68,7 @@ class TrajectoryPlotter:
             self._plotJoint = plot_joint
 
         self._episode_counter = 0
-        self._zero_vector = [0.0 for _ in range(self._num_joints)]
+        self._zero_vector = np.zeros(self._num_joints)
 
         self._current_acc_limits = None
 
@@ -87,8 +87,8 @@ class TrajectoryPlotter:
         self._time_step_counter = 0
         self._episode_counter = self._episode_counter + 1
 
-        self._current_acc = np.array(self._zero_vector.copy())
-        self._current_vel = np.array(self._zero_vector.copy())
+        self._current_acc = self._zero_vector.copy()
+        self._current_vel = self._zero_vector.copy()
         self._current_pos = np.array(initial_joint_position.copy())
 
         self._pos = []
@@ -99,6 +99,7 @@ class TrajectoryPlotter:
         self._current_acc_limits.append([[0, 0] for _ in range(self._num_joints)])
 
         self._time = [0]
+
         self._pos.append(normalize(self._current_pos, self._pos_limits_min_max))
         self._vel.append(normalize(self._current_vel, self._vel_limits_min_max))
         self._acc.append(normalize(self._current_acc, self._acc_limits_min_max))
@@ -238,7 +239,7 @@ class TrajectoryPlotter:
             self._sub_jerk.append(self._jerk[-1])
         time_since_start = np.linspace(self._time_step / self._plot_num_sub_time_steps, self._time_step,
                                        self._plot_num_sub_time_steps)
-        self._sub_time.extend(list(time_since_start + self._time_step_counter * self._time_step ))
+        self._sub_time.extend(list(time_since_start + self._time_step_counter * self._time_step))
         sub_current_acc = interpolate_acceleration_batch(last_acc, self._current_acc, time_since_start, self._time_step)
         sub_current_vel = interpolate_velocity_batch(last_acc, self._current_acc, last_vel, time_since_start,
                                                      self._time_step)
