@@ -253,7 +253,7 @@ cpdef normalize_np(np.ndarray[np.float64_t, ndim=1] value, np.ndarray[np.float64
     normalized_value = -1 + 2 * (value - value_range[0]) / (value_range[1] - value_range[0])
     return normalized_value
 
-cpdef normalize(double[::1] value, double[::1, :] value_range):
+cpdef normalize(double[::1] value, double[:, :] value_range):
     cdef int num_joints = value.shape[0]
     cdef int i
     cdef double[::1] normalized_value = np.zeros([num_joints], dtype=np.float64)
@@ -261,7 +261,7 @@ cpdef normalize(double[::1] value, double[::1, :] value_range):
         normalized_value[i] = -1 + 2 * (value[i] - value_range[0, i]) / (value_range[1, i] - value_range[0, i])
     return np.asarray(normalized_value)
 
-cpdef normalize_parallel(double[::1] value, double[::1, :] value_range):
+cpdef normalize_parallel(double[::1] value, double[:, :] value_range):
     cdef int num_joints = value.shape[0]
     cdef int i
     cdef double[::1] normalized_value = np.zeros([num_joints], dtype=np.float64)
@@ -273,7 +273,7 @@ cpdef normalize_batch_np(np.ndarray[np.float64_t, ndim=2] value, np.ndarray[np.f
     normalized_value = -1 + 2 * (value - value_range[0]) / (value_range[1] - value_range[0])
     return normalized_value
 
-cpdef normalize_batch(double[:, :] value, double[::1, :] value_range):
+cpdef normalize_batch(double[:, :] value, double[:, :] value_range):
     cdef int num_steps = value.shape[0]
     cdef int num_joints = value.shape[1]
     cdef int i, j
@@ -285,7 +285,7 @@ cpdef normalize_batch(double[:, :] value, double[::1, :] value_range):
 
     return np.asarray(normalized_value)
 
-cpdef normalize_batch_parallel(double[:, :] value, double[::1, :] value_range):
+cpdef normalize_batch_parallel(double[:, :] value, double[:, :] value_range):
     cdef int num_steps = value.shape[0]
     cdef int num_joints = value.shape[1]
     cdef int i, j
@@ -301,7 +301,7 @@ cpdef denormalize_np(np.ndarray[np.float64_t, ndim=1] norm_value,  np.ndarray[np
     actual_value = value_range[0] + 0.5 * (norm_value + 1) * (value_range[1] - value_range[0])
     return actual_value
 
-cpdef denormalize(double[::1] norm_value, double[::1, :] value_range):
+cpdef denormalize(double[::1] norm_value, double[:, :] value_range):
     cdef int num_joints = norm_value.shape[0]
     cdef int i
     cdef double[::1] actual_value = np.zeros([num_joints], dtype=np.float64)
@@ -309,7 +309,7 @@ cpdef denormalize(double[::1] norm_value, double[::1, :] value_range):
         actual_value[i] =  value_range[0, i] + 0.5 * (norm_value[i] + 1) * (value_range[1, i] - value_range[0, i])
     return np.asarray(actual_value)
 
-cpdef denormalize_parallel(double[::1] norm_value, double[::1, :] value_range):
+cpdef denormalize_parallel(double[::1] norm_value, double[:, :] value_range):
     cdef int num_joints = norm_value.shape[0]
     cdef int i
     cdef double[::1] actual_value = np.zeros([num_joints], dtype=np.float64)
@@ -321,7 +321,7 @@ cpdef denormalize_batch_np(np.ndarray[np.float64_t, ndim=2] norm_value, np.ndarr
     actual_value = value_range[0] + 0.5 * (norm_value + 1) * (value_range[1] - value_range[0])
     return actual_value
 
-cpdef denormalize_batch(double[:, :] norm_value, double[::1, :] value_range):
+cpdef denormalize_batch(double[:, :] norm_value, double[:, :] value_range):
     cdef int num_steps = norm_value.shape[0]
     cdef int num_joints = norm_value.shape[1]
     cdef int i, j
@@ -333,7 +333,7 @@ cpdef denormalize_batch(double[:, :] norm_value, double[::1, :] value_range):
             
     return np.asarray(actual_value)
 
-cpdef denormalize_batch_parallel(double[:, :] norm_value, double[::1, :] value_range):
+cpdef denormalize_batch_parallel(double[:, :] norm_value, double[:, :] value_range):
     cdef int num_steps = norm_value.shape[0]
     cdef int num_joints = norm_value.shape[1]
     cdef int i, j
