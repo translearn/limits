@@ -448,9 +448,9 @@ class PosVelJerkLimitation:
 
         limit_violation_code = 0
 
+        acc_range_swap = np.array(acc_range_list).T
         for j in range(len(acc_range_list)):
             if j <= limit_violation_code:
-                acc_range_swap = np.swapaxes(acc_range_list, 0, 1)
                 acc_range_total = [np.max(acc_range_swap[0][j:]), np.min(acc_range_swap[1][j:])]
                 if math.isnan(acc_range_total[0]) or math.isnan(acc_range_total[1]) or \
                         (acc_range_total[0] - acc_range_total[1]) > 0.001:
@@ -459,9 +459,11 @@ class PosVelJerkLimitation:
                     if (acc_range_total[0] - acc_range_total[1]) > 0:
                         acc_range_total[1] = acc_range_total[0]
 
-        acc_range_joint = np.clip(acc_range_total, acc_limits[0], acc_limits[1])
+        # acc_range_total = acc_range_total.clip(acc_limits[0], acc_limits[1], out=acc_range_total)
+        acc_range_total[0] = min(acc_limits[1], max(acc_range_total[0], acc_limits[0]))
+        acc_range_total[1] = min(acc_limits[1], max(acc_range_total[1], acc_limits[0]))
 
-        return acc_range_joint, limit_violation_code
+        return acc_range_total, limit_violation_code
 
 
 def normalize(value, value_range):

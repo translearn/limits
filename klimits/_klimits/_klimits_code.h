@@ -43,6 +43,7 @@ double complex pos_upper_bound_a1_min_5(double j_min, double a_0, double a_min, 
 double pos_upper_bound_tv0(double j_min, double a_0, double a_1, double a_min, double v_0, double t_s);
 double vel_reduced_a1_max(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n);
 double vel_reduced_a1_min(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n);
+double compute_distance(double pos_a_0, double pos_a_1, double pos_a_2, double pos_b_0, double pos_b_1, double pos_b_2, double radius_a, double radius_b);
 
 #endif
 

@@ -5,6 +5,7 @@ cimport cython
 from cython.parallel import prange
 from cython.parallel cimport parallel
 cimport openmp
+from libc.math cimport sqrt as c_sqrt
 
 cdef extern from '_klimits_code.h':
     double pos_all_a1_max(double j_min, double a_0, double a_min, double v_0, double p_0, double p_max, double t_s, double t_n_a_min)
@@ -47,6 +48,7 @@ cdef extern from '_klimits_code.h':
     double pos_upper_bound_tv0(double j_min, double a_0, double a_1, double a_min, double v_0, double t_s)
     double vel_reduced_a1_max(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n)
     double vel_reduced_a1_min(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n)
+    double compute_distance(double pos_a_0, double pos_a_1, double pos_a_2, double pos_b_0, double pos_b_1, double pos_b_2, double radius_a, double radius_b)
 
 
 def pos_all_a1_max_c(double j_min, double a_0, double a_min, double v_0, double p_0, double p_max, double t_s, double t_n_a_min):
@@ -247,6 +249,9 @@ def vel_reduced_a1_max_c(double j_min, double a_0, double a_n_plus_1_star, doubl
 def vel_reduced_a1_min_c(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n):
 
     return vel_reduced_a1_min(j_min, a_0, a_n_plus_1_star, v_0, v_max, t_s, t_n)
+
+def compute_distance_c(double pos_a_0, double pos_a_1, double pos_a_2, double pos_b_0, double pos_b_1, double pos_b_2, double radius_a, double radius_b):
+    return compute_distance(pos_a_0, pos_a_1, pos_a_2, pos_b_0, pos_b_1, pos_b_2, radius_a, radius_b)
 
 
 cpdef normalize_np(np.ndarray[np.float64_t, ndim=1] value, np.ndarray[np.float64_t, ndim=2] value_range):

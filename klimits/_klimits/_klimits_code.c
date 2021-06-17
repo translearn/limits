@@ -320,3 +320,11 @@ double vel_reduced_a1_min(double j_min, double a_0, double a_n_plus_1_star, doub
    return result;
 
 }
+
+double compute_distance(double pos_a_0, double pos_a_1, double pos_a_2, double pos_b_0, double pos_b_1, double pos_b_2, double radius_a, double radius_b) {
+   
+   double result;
+   result = sqrt(pow(pos_a_0 - pos_b_0, 2) + pow(pos_a_1 - pos_b_1, 2) + pow(pos_a_2 - pos_b_2, 2)) - radius_a - radius_b;
+   return result;
+
+}
