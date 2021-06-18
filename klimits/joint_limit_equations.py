@@ -24,12 +24,8 @@ class JointLimitEquations:
         self._a_1_position_border_case_min_jerk_phase = load_expression(phase_and_variable="pos_min_jerk_a1",
                                                                         min_max=-1, expression_number=-1)
 
-        self._t_v0_position_border_case_min_jerk_phase = []
-
-        for i in range(3):
-            self._t_v0_position_border_case_min_jerk_phase.append(
-                load_expression(phase_and_variable="pos_min_jerk_tv0",
-                                min_max=-1, expression_number=i))
+        self._t_v0_position_border_case_min_jerk_phase = load_expression(phase_and_variable="pos_min_jerk_tv0", 
+                                                                         min_max=-1, expression_number=2)
 
         self._a_1_position_border_case_first_phase = load_expression(phase_and_variable="pos_first_a1",
                                                                      min_max=-1, expression_number=-1)
@@ -41,10 +37,9 @@ class JointLimitEquations:
             self._t_v0_position_border_case_first_phase.append(load_expression(phase_and_variable="pos_first_tv0",
                                                                                min_max=min_max, expression_number=-1))
             for solution in range(2):
-                for i in range(3):
-                    self._a_1_position_border_case_upper_bound[min_max].append(
-                        load_expression(phase_and_variable="pos_upper_bound_a1",
-                                        min_max=min_max, expression_number=i + solution * 3))
+                self._a_1_position_border_case_upper_bound[min_max].append(
+                    load_expression(phase_and_variable="pos_upper_bound_a1",
+                                    min_max=min_max, expression_number=2 + solution * 3))
 
         self._t_v0_position_border_case_upper_bound = load_expression(phase_and_variable="pos_upper_bound_tv0",
                                                                       min_max=-1, expression_number=-1)
@@ -64,10 +59,9 @@ class JointLimitEquations:
         self._t_v0_position_border_case_reduced_jerk_phase = []
 
         for solution in range(2):
-            for i in range(3):
-                self._t_v0_position_border_case_reduced_jerk_phase.append(
-                    load_expression(phase_and_variable="pos_reduced_jerk_tv0", min_max=-1,
-                                    expression_number=i + solution * 3))
+            self._t_v0_position_border_case_reduced_jerk_phase.append(
+                load_expression(phase_and_variable="pos_reduced_jerk_tv0", min_max=-1,
+                                expression_number=2 + solution * 3))
 
         self._a_1_position_bounded_velocity_continuous_all_phases = load_expression(
             phase_and_variable="pos_all_bounded_vel_continuous_a1", min_max=-1, expression_number=-1)
@@ -102,12 +96,9 @@ class JointLimitEquations:
     
     def position_border_case_min_jerk_phase(self, j_min_in, a_0_in, v_0_in, p_0_in, p_max_in, t_s_in):
 
-        if self._t_v0_position_border_case_min_jerk_phase[0](j_min_in, a_0_in, v_0_in, p_0_in, p_max_in, t_s_in) == 0:
-            t_v0_out = self._t_v0_position_border_case_min_jerk_phase[1](j_min_in, a_0_in, v_0_in, p_0_in, p_max_in,
-                                                                         t_s_in)
-        else:
-            t_v0_out = self._t_v0_position_border_case_min_jerk_phase[2](j_min_in, a_0_in, v_0_in, p_0_in, p_max_in,
-                                                                         t_s_in)
+        
+        t_v0_out = self._t_v0_position_border_case_min_jerk_phase(j_min_in, a_0_in, v_0_in, p_0_in, p_max_in,
+                                                                  t_s_in)
 
         if np.abs(np.imag(t_v0_out)) < 1e-5:
             t_v0_out = np.real(t_v0_out)
@@ -128,22 +119,9 @@ class JointLimitEquations:
     def position_border_case_upper_bound(self, min_max, j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in):
 
         for solution in range(2):
-            a_1_position_border_case_upper_bound_condition = \
-                self._a_1_position_border_case_upper_bound[min_max][0 + solution * 3](j_min_in, a_0_in, a_min_in,
-                                                                                      v_0_in,
-                                                                                      p_0_in, p_max_in, t_s_in)
-
-            if a_1_position_border_case_upper_bound_condition == 0:
-                a_1_out = self._a_1_position_border_case_upper_bound[min_max][1 + solution * 3](j_min_in, a_0_in,
-                                                                                                a_min_in,
-                                                                                                v_0_in, p_0_in,
-                                                                                                p_max_in,
-                                                                                                t_s_in)
-
-            else:
-                a_1_out = self._a_1_position_border_case_upper_bound[min_max][2 + solution * 3](j_min_in, a_0_in, a_min_in,
-                                                                                          v_0_in, p_0_in, p_max_in,
-                                                                                          t_s_in)
+            a_1_out = self._a_1_position_border_case_upper_bound[min_max][solution](j_min_in, a_0_in, a_min_in,
+                                                                                    v_0_in, p_0_in, p_max_in,
+                                                                                    t_s_in)
 
             if np.abs(np.imag(a_1_out)) < 1e-3:
                 a_1_out = np.real(a_1_out)
@@ -157,10 +135,10 @@ class JointLimitEquations:
                 a_min_in = a_min_in + 0.02
 
             for solution in range(2):
-                a_1_out = self._a_1_position_border_case_upper_bound[min_max][2 + solution * 3](j_min_in, a_0_in,
-                                                                                                a_min_in, v_0_in,
-                                                                                                p_0_in, p_max_in,
-                                                                                                t_s_in)
+                a_1_out = self._a_1_position_border_case_upper_bound[min_max][solution](j_min_in, a_0_in,
+                                                                                        a_min_in, v_0_in,
+                                                                                        p_0_in, p_max_in,
+                                                                                        t_s_in)
 
                 if np.abs(np.imag(a_1_out)) < 1e-3:
                     a_1_out = np.real(a_1_out)
@@ -187,22 +165,13 @@ class JointLimitEquations:
                                                 t_n_a_min_in):
 
         for solution in range(2):
-            if self._t_v0_position_border_case_reduced_jerk_phase[0 + solution * 3](j_min_in, a_0_in, a_min_in, v_0_in,
-                                                                                    p_0_in, p_max_in, t_s_in,
-                                                                                    t_n_a_min_in) == 0:
-                t_v0_out = self._t_v0_position_border_case_reduced_jerk_phase[1 + solution * 3](j_min_in, a_0_in,
-                                                                                                a_min_in,
-                                                                                                v_0_in, p_0_in,
-                                                                                                p_max_in,
-                                                                                                t_s_in,
-                                                                                                t_n_a_min_in)
-            else:
-                t_v0_out = self._t_v0_position_border_case_reduced_jerk_phase[2 + solution * 3](j_min_in, a_0_in,
-                                                                                                a_min_in,
-                                                                                                v_0_in, p_0_in,
-                                                                                                p_max_in,
-                                                                                                t_s_in,
-                                                                                                t_n_a_min_in)
+            
+            t_v0_out = self._t_v0_position_border_case_reduced_jerk_phase[solution](j_min_in, a_0_in,
+                                                                                    a_min_in,
+                                                                                    v_0_in, p_0_in,
+                                                                                    p_max_in,
+                                                                                    t_s_in,
+                                                                                    t_n_a_min_in)
 
             if np.abs(np.imag(t_v0_out)) < 1e-5 and np.real(t_v0_out) >= t_n_a_min_in:
                 t_v0_out = np.real(t_v0_out)
