@@ -175,7 +175,7 @@ class PosVelJerkLimitation:
                                 or (j == 1 and (current_vel + 0.5 * current_acc * t_s) >= vel_limits[1]):
 
                             second_phase = False
-                            if np.abs(current_acc) < 1e-8:
+                            if abs(current_acc) < 1e-8:
                                 acc_range_dynamic_vel[j] = 0
                             else:
                                 with np.errstate(divide='ignore', invalid='ignore'):
@@ -183,7 +183,7 @@ class PosVelJerkLimitation:
                                             1 - ((0.5 * current_acc * t_s) / (vel_limits[j] - current_vel)))
 
                             if braking_trajectory:
-                                if np.abs(acc_range_dynamic_vel[j]) >= 0.01:
+                                if abs(acc_range_dynamic_vel[j]) >= 0.01:
                                     second_phase = True
                                     nj = j
 
@@ -430,9 +430,7 @@ class PosVelJerkLimitation:
                 if math.isnan(acc_range_dynamic_pos[j]):
                     acc_range_dynamic_pos[j] = acc_limits[j]
 
-        acc_range_list = []
-        acc_range_list.append(acc_range_jerk)
-        acc_range_list.append(acc_range_acc)
+        acc_range_list = [[acc_range_jerk[0], acc_range_acc[0]], [acc_range_jerk[1], acc_range_acc[1]]]
 
         if limit_velocity:
             if self._soft_velocity_limits:
@@ -444,7 +442,8 @@ class PosVelJerkLimitation:
                 if acc_range_dynamic_vel[0] > acc_range_jerk[1]:
                     acc_range_dynamic_vel[0] = acc_range_jerk[1]
 
-            acc_range_list.append(acc_range_dynamic_vel)
+            acc_range_list[0].append(acc_range_dynamic_vel[0])
+            acc_range_list[1].append(acc_range_dynamic_vel[1])
 
         if limit_position:
             if self._soft_position_limits and self._soft_velocity_limits:
@@ -456,14 +455,14 @@ class PosVelJerkLimitation:
                 if acc_range_dynamic_pos[0] > acc_range_jerk[1]:
                     acc_range_dynamic_pos[0] = acc_range_jerk[1]
 
-            acc_range_list.append(acc_range_dynamic_pos)
+            acc_range_list[0].append(acc_range_dynamic_pos[0])
+            acc_range_list[1].append(acc_range_dynamic_pos[1])
 
         limit_violation_code = 0
 
-        acc_range_swap = np.array(acc_range_list).T
-        for j in range(len(acc_range_list)):
+        for j in range(len(acc_range_list[0])):
             if j <= limit_violation_code:
-                acc_range_total = [np.max(acc_range_swap[0][j:]), np.min(acc_range_swap[1][j:])]
+                acc_range_total = [max(acc_range_list[0][j:]), min(acc_range_list[1][j:])]
                 if math.isnan(acc_range_total[0]) or math.isnan(acc_range_total[1]) or \
                         (acc_range_total[0] - acc_range_total[1]) > 0.001:
                     limit_violation_code = limit_violation_code + 1
