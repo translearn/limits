@@ -46,8 +46,9 @@ cdef extern from '_klimits_code.h':
     double pos_upper_bound_a1_min_4(double j_min, double a_0, double a_min, double v_0, double p_0, double p_max, double t_s)
     double complex pos_upper_bound_a1_min_5(double j_min, double a_0, double a_min, double v_0, double p_0, double p_max, double t_s)
     double pos_upper_bound_tv0(double j_min, double a_0, double a_1, double a_min, double v_0, double t_s)
-    double vel_reduced_a1_max(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n)
-    double vel_reduced_a1_min(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n)
+    double vel_zero_a_n_plus_1_star_a1(double j_min, double a_0, double v_0, double v_max, double t_s, double t_n)
+    double vel_fixed_a_n_plus_1_star_a1_max(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n)
+    double vel_fixed_a_n_plus_1_star_a1_min(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n)
     double compute_distance(double pos_a_0, double pos_a_1, double pos_a_2, double pos_b_0, double pos_b_1, double pos_b_2, double radius_a, double radius_b)
 
 
@@ -240,15 +241,19 @@ def pos_upper_bound_tv0_c(double j_min, double a_0, double a_1, double a_min, do
 
     return pos_upper_bound_tv0(j_min, a_0, a_1, a_min, v_0, t_s)
 
+def vel_zero_a_n_plus_1_star_a1_c(double j_min, double a_0, double v_0, double v_max, double t_s, double t_n):
 
-def vel_reduced_a1_max_c(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n):
-
-    return vel_reduced_a1_max(j_min, a_0, a_n_plus_1_star, v_0, v_max, t_s, t_n)
+    return vel_zero_a_n_plus_1_star_a1(j_min, a_0, v_0, v_max, t_s, t_n)
 
 
-def vel_reduced_a1_min_c(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n):
+def vel_fixed_a_n_plus_1_star_a1_max_c(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n):
 
-    return vel_reduced_a1_min(j_min, a_0, a_n_plus_1_star, v_0, v_max, t_s, t_n)
+    return vel_fixed_a_n_plus_1_star_a1_max(j_min, a_0, a_n_plus_1_star, v_0, v_max, t_s, t_n)
+
+
+def vel_fixed_a_n_plus_1_star_a1_min_c(double j_min, double a_0, double a_n_plus_1_star, double v_0, double v_max, double t_s, double t_n):
+
+    return vel_fixed_a_n_plus_1_star_a1_min(j_min, a_0, a_n_plus_1_star, v_0, v_max, t_s, t_n)
 
 def compute_distance_c(double pos_a_0, double pos_a_1, double pos_a_2, double pos_b_0, double pos_b_1, double pos_b_2, double radius_a, double radius_b):
     return compute_distance(pos_a_0, pos_a_1, pos_a_2, pos_b_0, pos_b_1, pos_b_2, radius_a, radius_b)

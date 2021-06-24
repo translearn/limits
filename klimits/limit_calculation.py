@@ -42,6 +42,8 @@ class PosVelJerkLimitation:
         self._jerk_limits = jerk_limits
 
         self._acceleration_after_max_vel_limit_factor = acceleration_after_max_vel_limit_factor
+        self._acc_limits_after_max_vel = np.asarray(self._acc_limits) * acceleration_after_max_vel_limit_factor
+
         self._set_velocity_after_max_pos_to_zero = set_velocity_after_max_pos_to_zero
         self._limit_velocity = limit_velocity
         self._limit_position = limit_position
@@ -101,7 +103,7 @@ class PosVelJerkLimitation:
                                                      i, self._time_step, pos[i], current_vel[i], current_acc[i],
                                                      self._pos_limits[i], self._vel_limits[i], self._acc_limits[i],
                                                      self._jerk_limits[i],
-                                                     self._acceleration_after_max_vel_limit_factor,
+                                                     self._acc_limits_after_max_vel[i],
                                                      self._set_velocity_after_max_pos_to_zero,
                                                      self._limit_velocity, self._limit_position, braking_trajectory,
                                                      time_step_counter, limit_min_max[i])
@@ -121,7 +123,7 @@ class PosVelJerkLimitation:
                                                                        current_acc[i], self._pos_limits[i],
                                                                        self._vel_limits[i], self._acc_limits[i],
                                                                        self._jerk_limits[i],
-                                                                       self._acceleration_after_max_vel_limit_factor,
+                                                                       self._acc_limits_after_max_vel[i],
                                                                        self._set_velocity_after_max_pos_to_zero,
                                                                        self._limit_velocity, self._limit_position,
                                                                        braking_trajectory, time_step_counter,
@@ -141,7 +143,7 @@ class PosVelJerkLimitation:
 
     def _calculate_valid_acceleration_range_per_joint(self, joint_index, t_s, current_pos, current_vel, current_acc,
                                                       pos_limits, vel_limits, acc_limits, jerk_limits,
-                                                      acceleration_after_max_vel_limit_factor,
+                                                      acc_limits_after_max_vel,
                                                       set_velocity_after_max_pos_to_zero=False,
                                                       limit_velocity=True, limit_position=True,
                                                       braking_trajectory=False,
@@ -168,23 +170,30 @@ class PosVelJerkLimitation:
                         if not limit_min_max[j]:
                             continue
                         nj = (j + 1) % 2
+                        second_phase = True
                         if (j == 0 and (current_vel + 0.5 * current_acc * t_s) <= vel_limits[0]) \
                                 or (j == 1 and (current_vel + 0.5 * current_acc * t_s) >= vel_limits[1]):
 
-                            if current_acc == 0:
+                            second_phase = False
+                            if np.abs(current_acc) < 1e-8:
                                 acc_range_dynamic_vel[j] = 0
                             else:
                                 with np.errstate(divide='ignore', invalid='ignore'):
                                     acc_range_dynamic_vel[j] = current_acc * (
                                             1 - ((0.5 * current_acc * t_s) / (vel_limits[j] - current_vel)))
 
-                        else:
+                            if braking_trajectory:
+                                if np.abs(acc_range_dynamic_vel[j]) >= 0.01:
+                                    second_phase = True
+                                    nj = j
+
+                        if second_phase:
                             a = - jerk_limits[nj] / 2
                             b = t_s * jerk_limits[nj] / 2
                             c = current_vel - vel_limits[j] + current_acc * t_s / 2
 
                             if b ** 2 - 4 * a * c >= 0:
-                                if j == 0:
+                                if nj == 1:
                                     t_a0_1 = (-b - np.sqrt(b ** 2 - 4 * a * c)) / (
                                             2 * a)
                                 else:
@@ -196,18 +205,21 @@ class PosVelJerkLimitation:
                                 if np.ceil(t_a0_1 / t_s) > t_a0_1 / t_s:
                                     n = np.ceil(t_a0_1 / t_s) - 1
                                     a_n_plus_1 = a1_limit + jerk_limits[nj] * t_s * n
-                                    if (j == 0 and a_n_plus_1 > acc_limits[1] *
-                                        acceleration_after_max_vel_limit_factor) or \
-                                            (j == 1 and a_n_plus_1 < acc_limits[0] *
-                                             acceleration_after_max_vel_limit_factor):
+                                    if (nj == 1 and a_n_plus_1 > acc_limits_after_max_vel[1]) or \
+                                            (nj == 0 and a_n_plus_1 < acc_limits_after_max_vel[0]):
                                         a_0 = current_acc
-                                        a_n_plus_1_star = acc_limits[nj] * acceleration_after_max_vel_limit_factor
+                                        a_n_plus_1_star = acc_limits_after_max_vel[nj]
                                         t_n = n * t_s
                                         j_min = jerk_limits[nj]
                                         v_0 = current_vel
                                         v_max = vel_limits[j]
+                                        if j == nj:
+                                            min_max = (j + 1) % 2
+                                        else:
+                                            min_max = j
+
                                         a1_limit = \
-                                            self._joint_limit_equations.velocity_reduced_acceleration(j, j_min,
+                                            self._joint_limit_equations.velocity_reduced_acceleration(min_max, j_min,
                                                                                                       a_0,
                                                                                                       a_n_plus_1_star,
                                                                                                       v_0, v_max,

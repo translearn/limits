@@ -13,13 +13,16 @@ import _klimits
 
 class JointLimitEquations:
     def __init__(self):
-        self._a_1_velocity_reduced_acceleration = []
+        self._a_1_velocity_zero_a_n_plus_1_star = load_expression(phase_and_variable="vel_zero_a_n_plus_1_star_a1",
+                                                                  min_max=-1, expression_number=-1)
 
-        self._a_1_velocity_reduced_acceleration.append(
-            load_expression(phase_and_variable="vel_reduced_a1", min_max=0, expression_number=-1))
+        self._a_1_velocity_fixed_a_n_plus_1_star = []
 
-        self._a_1_velocity_reduced_acceleration.append(
-            load_expression(phase_and_variable="vel_reduced_a1", min_max=1, expression_number=-1))
+        self._a_1_velocity_fixed_a_n_plus_1_star.append(
+            load_expression(phase_and_variable="vel_fixed_a_n_plus_1_star_a1", min_max=0, expression_number=-1))
+
+        self._a_1_velocity_fixed_a_n_plus_1_star.append(
+            load_expression(phase_and_variable="vel_fixed_a_n_plus_1_star_a1", min_max=1, expression_number=-1))
 
         self._a_1_position_border_case_min_jerk_phase = load_expression(phase_and_variable="pos_min_jerk_a1",
                                                                         min_max=-1, expression_number=-1)
@@ -90,13 +93,15 @@ class JointLimitEquations:
     def velocity_reduced_acceleration(self, min_max, j_min_in, a_0_in, a_n_plus_1_star_in, v_0_in, v_max_in, t_s_in,
                                       t_n_in):
 
-        a_1_out = self._a_1_velocity_reduced_acceleration[min_max](j_min_in, a_0_in, a_n_plus_1_star_in, v_0_in,
-                                                                   v_max_in, t_s_in, t_n_in)
+        if a_n_plus_1_star_in == 0:
+            a_1_out = self._a_1_velocity_zero_a_n_plus_1_star(j_min_in, a_0_in, v_0_in, v_max_in, t_s_in, t_n_in)
+        else:
+            a_1_out = self._a_1_velocity_fixed_a_n_plus_1_star[min_max](j_min_in, a_0_in, a_n_plus_1_star_in, v_0_in,
+                                                                        v_max_in, t_s_in, t_n_in)
         return a_1_out
     
     def position_border_case_min_jerk_phase(self, j_min_in, a_0_in, v_0_in, p_0_in, p_max_in, t_s_in):
 
-        
         t_v0_out = self._t_v0_position_border_case_min_jerk_phase(j_min_in, a_0_in, v_0_in, p_0_in, p_max_in,
                                                                   t_s_in)
 

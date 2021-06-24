@@ -152,6 +152,7 @@ if __name__ == '__main__':
     acc_limitation = PosVelJerkLimitation(time_step=time_step,
                                           pos_limits=pos_limits, vel_limits=vel_limits,
                                           acc_limits=acc_limits, jerk_limits=jerk_limits,
+                                          acceleration_after_max_vel_limit_factor=0.0001,
                                           normalize_acc_range=False)
 
     trajectory_plotter = TrajectoryPlotter(time_step=time_step,
@@ -176,7 +177,8 @@ if __name__ == '__main__':
         # calculate the range of valid actions
         safe_action_range, _ = acc_limitation.calculate_valid_acceleration_range(current_position,
                                                                                  current_velocity,
-                                                                                 current_acceleration)
+                                                                                 current_acceleration,
+                                                                                 time_step_counter=j)
         # generate actions in range [-1, 1] for each joint
         # Note: Action calculation is normally performed by a neural network
         if use_random_actions:
