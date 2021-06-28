@@ -24,7 +24,7 @@ ext_mods = [Extension(
     extra_link_args=['-fopenmp'] + os_extra_link_args
 )]
 setup(name='klimits',
-      version='1.0.7',
+      version='1.0.8',
       packages=['klimits'],
       author='Jonas C. Kiemel',
       author_email='jonas.kiemel@kit.edu',
