@@ -18,11 +18,15 @@ jobs:
       - name: Install gcc on MacOS
         if: matrix.os == 'macOS-10.15'
         run: |
-          brew install gcc
-          brew install gcc
+          brew install gcc@11
+          gcc-11 -v
 
       - name: build specified wheels
-        run: python -m cibuildwheel --output-dir dist
+        run: |
+          if [[ ${{ matrix.os }} == macOS-10.15 ]]; then
+            echo "CC=gcc-11" >> $GITHUB_ENV
+          fi
+          python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
           CIBW_BEFORE_BUILD: python -m pip install cython numpy
