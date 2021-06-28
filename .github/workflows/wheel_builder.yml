@@ -33,6 +33,7 @@ jobs:
         if: matrix.os == 'ubuntu-20.04'
         run: |
           python -m cibuildwheel --output-dir dist
+          python -c "import numpy; print(numpy.__version__); print(numpy.get_include())"
         env:
           CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
           CIBW_BEFORE_BUILD: python -m pip install cython numpy==1.19.5
