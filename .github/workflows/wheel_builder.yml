@@ -42,4 +42,4 @@ jobs:
           TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
         run: |
-          python -m twine --skip-existing upload dist/*.whl
+          python -m twine upload --skip-existing dist/*.whl
