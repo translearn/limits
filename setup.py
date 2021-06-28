@@ -2,6 +2,7 @@ from setuptools import setup
 from setuptools import Extension
 from Cython.Build import cythonize
 import os
+import numpy as np
 
 with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:
     readme_file = f.read()
@@ -16,7 +17,7 @@ else:
 
 ext_mods = [Extension(
     '_klimits', ['klimits/_klimits/_klimits_module.pyx', 'klimits/_klimits/_klimits_code.c'],
-    include_dirs=[],
+    include_dirs=[np.get_include()],
     library_dirs=[],
     libraries=[],
     extra_compile_args=['-O3', '-std=c99', '-fopenmp', '-march=native'] + os_extra_compile_args,
