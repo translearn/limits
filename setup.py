@@ -20,11 +20,11 @@ ext_mods = [Extension(
     include_dirs=[np.get_include()],
     library_dirs=[],
     libraries=[],
-    extra_compile_args=['-O3', '-std=c99', '-fopenmp', '-march=native'] + os_extra_compile_args,
+    extra_compile_args=['-O3', '-std=c99', '-fopenmp'] + os_extra_compile_args,
     extra_link_args=['-fopenmp'] + os_extra_link_args
 )]
 setup(name='klimits',
-      version='1.0.5',
+      version='1.0.6',
       packages=['klimits'],
       author='Jonas C. Kiemel',
       author_email='jonas.kiemel@kit.edu',
