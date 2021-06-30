@@ -209,11 +209,12 @@ class TrajectoryPlotter:
                                      color=color, linestyle=linestyle, label=label)
 
         for i in range(len(ax)):
-            ax[i].legend(loc='lower right')
             if self._plot_time_limits is None:
                 ax[i].set_xlim([0, self._time[-1]])  
             else:
                 ax[i].set_xlim([0, self._plot_time_limits[1] - self._plot_time_limits[0]])
+
+        ax[-1].legend(loc='lower right')
 
         if ax_acc is not None:
             ax[ax_acc].set_ylim([-1.05, 1.05])

@@ -32,3 +32,6 @@ from _klimits import interpolate_acceleration_batch
 from _klimits import interpolate_acceleration_batch_np
 from _klimits import interpolate_acceleration_batch_parallel
 from _klimits import compute_distance_c
+from _klimits import get_num_threads
+
+from _klimits import PosVelJerkLimitation
