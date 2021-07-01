@@ -267,7 +267,7 @@ cpdef normalize_np(np.ndarray[np.float64_t, ndim=1] value, np.ndarray[np.float64
 cpdef normalize(double[::1] value, double[:, :] value_range):
     cdef int num_joints = value.shape[0]
     cdef int i
-    cdef double[::1] normalized_value = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] normalized_value = np.empty((num_joints,))
     for i in range(num_joints):
         normalized_value[i] = -1 + 2 * (value[i] - value_range[0, i]) / (value_range[1, i] - value_range[0, i])
     return np.asarray(normalized_value)
@@ -275,7 +275,7 @@ cpdef normalize(double[::1] value, double[:, :] value_range):
 cpdef normalize_parallel(double[::1] value, double[:, :] value_range):
     cdef int num_joints = value.shape[0]
     cdef int i
-    cdef double[::1] normalized_value = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] normalized_value = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):
         normalized_value[i] = -1 + 2 * (value[i] - value_range[0, i]) / (value_range[1, i] - value_range[0, i])
     return np.asarray(normalized_value)
@@ -288,7 +288,7 @@ cpdef normalize_batch(double[:, :] value, double[:, :] value_range):
     cdef int num_steps = value.shape[0]
     cdef int num_joints = value.shape[1]
     cdef int i, j
-    cdef double[:, ::1] normalized_value = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] normalized_value = np.empty((num_steps, num_joints))
     
     for i in range(num_steps):
         for j in range(num_joints):
@@ -300,7 +300,7 @@ cpdef normalize_batch_parallel(double[:, :] value, double[:, :] value_range):
     cdef int num_steps = value.shape[0]
     cdef int num_joints = value.shape[1]
     cdef int i, j
-    cdef double[:, ::1] normalized_value = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] normalized_value = np.empty((num_steps, num_joints))
     
     for i in prange(num_steps, nogil=True, schedule='static'):
         for j in range(num_joints):
@@ -315,7 +315,7 @@ cpdef denormalize_np(np.ndarray[np.float64_t, ndim=1] norm_value,  np.ndarray[np
 cpdef denormalize(double[::1] norm_value, double[:, :] value_range):
     cdef int num_joints = norm_value.shape[0]
     cdef int i
-    cdef double[::1] actual_value = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] actual_value = np.empty((num_joints,))
     for i in range(num_joints):
         actual_value[i] =  value_range[0, i] + 0.5 * (norm_value[i] + 1) * (value_range[1, i] - value_range[0, i])
     return np.asarray(actual_value)
@@ -323,7 +323,7 @@ cpdef denormalize(double[::1] norm_value, double[:, :] value_range):
 cpdef denormalize_parallel(double[::1] norm_value, double[:, :] value_range):
     cdef int num_joints = norm_value.shape[0]
     cdef int i
-    cdef double[::1] actual_value = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] actual_value = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):
         actual_value[i] =  value_range[0, i] + 0.5 * (norm_value[i] + 1) * (value_range[1, i] - value_range[0, i])
     return np.asarray(actual_value)
@@ -336,7 +336,7 @@ cpdef denormalize_batch(double[:, :] norm_value, double[:, :] value_range):
     cdef int num_steps = norm_value.shape[0]
     cdef int num_joints = norm_value.shape[1]
     cdef int i, j
-    cdef double[:, ::1] actual_value = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] actual_value = np.empty((num_steps, num_joints))
     
     for i in range(num_steps):
         for j in range(num_joints):
@@ -348,7 +348,7 @@ cpdef denormalize_batch_parallel(double[:, :] norm_value, double[:, :] value_ran
     cdef int num_steps = norm_value.shape[0]
     cdef int num_joints = norm_value.shape[1]
     cdef int i, j
-    cdef double[:, ::1] actual_value = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] actual_value = np.empty((num_steps, num_joints))
     
     for i in prange(num_steps, nogil=True, schedule='static'):
         for j in range(num_joints):
@@ -368,7 +368,7 @@ cpdef calculate_end_position(double[::1] start_acceleration, double[::1] end_acc
                              double[::1] start_position, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] end_position = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] end_position = np.empty((num_joints,))
     for i in range(num_joints):     
         end_position[i] = start_position[i] + start_velocity[i] * trajectory_time_step + \
                           (0.33333333333333333 * start_acceleration[i] + 0.16666666666666666 * end_acceleration[i]) * trajectory_time_step ** 2                   
@@ -379,7 +379,7 @@ cpdef calculate_end_position_parallel(double[::1] start_acceleration, double[::1
                                       double[::1] start_position, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] end_position = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] end_position = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):     
         end_position[i] = start_position[i] + start_velocity[i] * trajectory_time_step + \
                           (0.33333333333333333 * start_acceleration[i] + 0.16666666666666666 * end_acceleration[i]) * trajectory_time_step ** 2                   
@@ -402,7 +402,7 @@ cpdef interpolate_position(double[::1] start_acceleration, double[::1] end_accel
                            double time_since_start, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] interpolated_position = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] interpolated_position = np.empty((num_joints,))
     for i in range(num_joints):     
         interpolated_position[i] = start_position[i] + start_velocity[i] * time_since_start + \
                                    0.5 * start_acceleration[i] * time_since_start ** 2 + \
@@ -415,7 +415,7 @@ cpdef interpolate_position_parallel(double[::1] start_acceleration, double[::1] 
                                     double time_since_start, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] interpolated_position = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] interpolated_position = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):     
         interpolated_position[i] = start_position[i] + start_velocity[i] * time_since_start + \
                                    0.5 * start_acceleration[i] * time_since_start ** 2 + \
@@ -429,7 +429,7 @@ cpdef interpolate_position_batch_np(np.ndarray[np.float64_t, ndim=1] start_accel
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i
-    cdef np.ndarray[np.float64_t, ndim=2] interpolated_position = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim=2] interpolated_position = np.empty((num_steps, num_joints))
     
     for i in range(num_steps):
         interpolated_position[i] = start_position + start_velocity * time_since_start[i] + \
@@ -445,7 +445,7 @@ cpdef interpolate_position_batch(double[::1] start_acceleration, double[::1] end
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i, j
-    cdef double[:, ::1] interpolated_position = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] interpolated_position = np.empty((num_steps, num_joints))
     
     for i in range(num_steps):
         for j in range(num_joints):
@@ -462,7 +462,7 @@ cpdef interpolate_position_batch_parallel(double[::1] start_acceleration, double
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i, j
-    cdef double[:, ::1] interpolated_position = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] interpolated_position = np.empty((num_steps, num_joints))
     
     for i in prange(num_steps, nogil=True, schedule='static'):
         for j in range(num_joints):
@@ -485,7 +485,7 @@ cpdef calculate_end_velocity(double[::1] start_acceleration, double[::1] end_acc
 
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] end_velocity = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] end_velocity = np.empty((num_joints,))
     for i in range(num_joints): 
         end_velocity[i] = start_velocity[i] + 0.5 * (start_acceleration[i] + end_acceleration[i]) * trajectory_time_step 
 
@@ -496,7 +496,7 @@ cpdef calculate_end_velocity_parallel(double[::1] start_acceleration, double[::1
 
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] end_velocity = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] end_velocity = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'): 
         end_velocity[i] = start_velocity[i] + 0.5 * (start_acceleration[i] + end_acceleration[i]) * trajectory_time_step 
 
@@ -516,7 +516,7 @@ cpdef interpolate_velocity(double[::1] start_acceleration, double[::1] end_accel
                            double[::1] start_velocity, double time_since_start, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] interpolated_velocity = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] interpolated_velocity = np.empty((num_joints,))
     for i in range(num_joints):                           
         interpolated_velocity[i] = start_velocity[i] + start_acceleration[i] * time_since_start + \
                                    0.5 * ((end_acceleration[i] - start_acceleration[i]) /
@@ -528,7 +528,7 @@ cpdef interpolate_velocity_parallel(double[::1] start_acceleration, double[::1] 
                                     double[::1] start_velocity, double time_since_start, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] interpolated_velocity = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] interpolated_velocity = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):                           
         interpolated_velocity[i] = start_velocity[i] + start_acceleration[i] * time_since_start + \
                                    0.5 * ((end_acceleration[i] - start_acceleration[i]) /
@@ -542,7 +542,7 @@ cpdef interpolate_velocity_batch_np(np.ndarray[np.float64_t, ndim=1] start_accel
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i
-    cdef np.ndarray[np.float64_t, ndim=2] interpolated_velocity = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim=2] interpolated_velocity = np.empty([num_steps, num_joints])
     
     for i in range(num_steps):
         interpolated_velocity[i] = start_velocity + start_acceleration * time_since_start[i] + \
@@ -557,7 +557,7 @@ cpdef interpolate_velocity_batch(double[::1] start_acceleration, double[::1] end
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i, j
-    cdef double[:, ::1] interpolated_velocity = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] interpolated_velocity = np.empty([num_steps, num_joints])
     
     for i in range(num_steps):
         for j in range(num_joints):
@@ -573,7 +573,7 @@ cpdef interpolate_velocity_batch_parallel(double[::1] start_acceleration, double
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i, j
-    cdef double[:, ::1] interpolated_velocity = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] interpolated_velocity = np.empty([num_steps, num_joints])
     
     for i in prange(num_steps, nogil=True, schedule='static'):
         for j in range(num_joints):
@@ -594,7 +594,7 @@ cpdef interpolate_acceleration(double[::1] start_acceleration, double[::1] end_a
                                double time_since_start, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] interpolated_acceleration = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] interpolated_acceleration = np.empty((num_joints,))
     for i in range(num_joints):    
         interpolated_acceleration[i] = start_acceleration[i] + ((end_acceleration[i] - start_acceleration[i]) /
                                     trajectory_time_step) * time_since_start
@@ -605,7 +605,7 @@ cpdef interpolate_acceleration_parallel(double[::1] start_acceleration, double[:
                                         double time_since_start, double trajectory_time_step):
     cdef int num_joints = start_acceleration.shape[0]     
     cdef int i
-    cdef double[::1] interpolated_acceleration = np.empty([num_joints], dtype=np.float64)
+    cdef double[::1] interpolated_acceleration = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):    
         interpolated_acceleration[i] = start_acceleration[i] + ((end_acceleration[i] - start_acceleration[i]) /
                                     trajectory_time_step) * time_since_start
@@ -617,7 +617,7 @@ cpdef interpolate_acceleration_batch_np(np.ndarray[np.float64_t, ndim=1] start_a
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i
-    cdef np.ndarray[np.float64_t, ndim=2] interpolated_acceleration = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim=2] interpolated_acceleration = np.empty((num_steps, num_joints))
     
     for i in range(num_steps):
         interpolated_acceleration[i] = start_acceleration + ((end_acceleration - start_acceleration) /
@@ -630,7 +630,7 @@ cpdef interpolate_acceleration_batch(double[::1] start_acceleration, double[::1]
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i, j
-    cdef double[:, ::1] interpolated_acceleration = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] interpolated_acceleration = np.empty((num_steps, num_joints))
     
     for i in range(num_steps):
         for j in range(num_joints):
@@ -644,7 +644,7 @@ cpdef interpolate_acceleration_batch_parallel(double[::1] start_acceleration, do
     cdef int num_steps = time_since_start.shape[0]
     cdef int num_joints = start_acceleration.shape[0]
     cdef int i, j
-    cdef double[:, ::1] interpolated_acceleration = np.empty([num_steps, num_joints], dtype=np.float64)
+    cdef double[:, ::1] interpolated_acceleration = np.empty((num_steps, num_joints))
     
     for i in prange(num_steps, nogil=True, schedule='static'):
         for j in range(num_joints):
@@ -742,13 +742,13 @@ cdef class PosVelJerkLimitation:
     def calculate_valid_acceleration_range(self, double[:] current_pos, double[:] current_vel, double[:] current_acc, bint braking_trajectory=False,
                                            int time_step_counter=0, double[:, :] limit_min_max=None, **kwargs):
         if limit_min_max is None:
-            limit_min_max = np.ones(shape=(self._num_joints, 2))
+            limit_min_max = np.ones((self._num_joints, 2))
         if current_pos is None:
-            current_pos = np.empty(shape=self._num_joints)
+            current_pos = np.empty((self._num_joints,))
 
         cdef double[:, :] acc_range = np.empty((self._num_joints, 2))
         cdef double[:, :] acc_range_min_max
-        cdef double[:] limit_violation = np.empty(self._num_joints)
+        cdef double[:] limit_violation = np.empty((self._num_joints,))
         cdef double[:, :] acc_range_dynamic_vel = self._acc_limits.copy()
         cdef double[:, :] acc_range_dynamic_pos = np.empty((self._num_joints, 2))
 
@@ -817,9 +817,9 @@ cdef class PosVelJerkLimitation:
 
 
         if self._normalize_acc_range:
-            acc_range_min_max = np.swapaxes(acc_range, 0, 1)
+            acc_range_min_max = acc_range.T
             acc_range_min_max = normalize_batch(acc_range_min_max, self._acc_limits_min_max)
-            acc_range = np.swapaxes(acc_range_min_max, 0, 1)
+            acc_range = acc_range_min_max.T
 
         return acc_range, limit_violation
 
