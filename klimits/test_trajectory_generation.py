@@ -68,6 +68,7 @@ if __name__ == '__main__':
                                                                       "threads is either determined by the environment "
                                                                       "variable OMP_NUM_THREADS or by the number of "
                                                                       "logical CPU cores available on your system")
+    parser.add_argument('--no_plot', action='store_true', default=False, help="if set, no plot is generated")
     parser.add_argument('--seed', type=int, default=None, help="seed the generator of random actions with an integer "
                                                                "(for debugging purposes)")
 
@@ -163,7 +164,7 @@ if __name__ == '__main__':
     else:
         logging.info("Using %s thread(s) to compute the range of safe accelerations.", num_threads)
     logging.info("Note: The best performance is usually achieved by setting either --num_threads or OMP_NUM_THREADS to "
-                 "the number of physical CPU cores available on your system.")
+                 "the number of physical (not virtual) CPU cores available on your system.")
 
     acc_limitation = PosVelJerkLimitation(time_step=time_step,
                                           pos_limits=pos_limits, vel_limits=vel_limits,
@@ -183,10 +184,11 @@ if __name__ == '__main__':
     current_velocity = np.zeros(len(vel_limits))
     current_acceleration = np.zeros(len(acc_limits))
 
-    trajectory_plotter.reset_plotter(current_position)
+    if not args.no_plot:
+        trajectory_plotter.reset_plotter(current_position)
 
-    trajectory_timer = timeit.default_timer()
-    logging.info('Calculating trajectory ...')
+    logging.info("Calculating trajectory ...")
+    trajectory_start_timer = timeit.default_timer()
 
     for j in range(round(trajectory_duration / time_step)):
 
@@ -204,7 +206,8 @@ if __name__ == '__main__':
 
         next_acceleration = denormalize(action, safe_action_range.T)
 
-        trajectory_plotter.add_data_point(next_acceleration, safe_action_range)
+        if not args.no_plot:
+            trajectory_plotter.add_data_point(next_acceleration, safe_action_range)
 
         next_position = calculate_end_position(current_acceleration, next_acceleration, current_velocity,
                                                current_position, time_step)
@@ -214,6 +217,8 @@ if __name__ == '__main__':
         current_velocity = next_velocity
         current_acceleration = next_acceleration
 
-    logging.info('Calculating a trajectory with a duration of ' + str(trajectory_duration) + " seconds took " +
-                 str(timeit.default_timer() - trajectory_timer) + ' seconds')
-    trajectory_plotter.display_plot()
+    trajectory_end_timer = timeit.default_timer()
+    logging.info("Calculating a trajectory with a duration of %s s and a time step of %s s took %s s.",
+                 trajectory_duration, args.time_step, trajectory_end_timer - trajectory_start_timer)
+    if not args.no_plot:
+        trajectory_plotter.display_plot()
