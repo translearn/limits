@@ -270,7 +270,7 @@ cpdef normalize(double[::1] value, double[:, :] value_range):
     cdef double[::1] normalized_value = np.empty((num_joints,))
     for i in range(num_joints):
         normalized_value[i] = -1 + 2 * (value[i] - value_range[0, i]) / (value_range[1, i] - value_range[0, i])
-    return np.asarray(normalized_value)
+    return normalized_value.base
 
 cpdef normalize_parallel(double[::1] value, double[:, :] value_range):
     cdef int num_joints = value.shape[0]
@@ -278,7 +278,7 @@ cpdef normalize_parallel(double[::1] value, double[:, :] value_range):
     cdef double[::1] normalized_value = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):
         normalized_value[i] = -1 + 2 * (value[i] - value_range[0, i]) / (value_range[1, i] - value_range[0, i])
-    return np.asarray(normalized_value)
+    return normalized_value.base
 
 cpdef normalize_batch_np(np.ndarray[np.float64_t, ndim=2] value, np.ndarray[np.float64_t, ndim=2] value_range):
     normalized_value = -1 + 2 * (value - value_range[0]) / (value_range[1] - value_range[0])
@@ -294,7 +294,7 @@ cpdef normalize_batch(double[:, :] value, double[:, :] value_range):
         for j in range(num_joints):
             normalized_value[i, j] =  -1 + 2 * (value[i, j] - value_range[0, j]) / (value_range[1, j] - value_range[0, j])
 
-    return np.asarray(normalized_value)
+    return normalized_value.base
 
 cpdef normalize_batch_parallel(double[:, :] value, double[:, :] value_range):
     cdef int num_steps = value.shape[0]
@@ -306,7 +306,7 @@ cpdef normalize_batch_parallel(double[:, :] value, double[:, :] value_range):
         for j in range(num_joints):
             normalized_value[i, j] =  -1 + 2 * (value[i, j] - value_range[0, j]) / (value_range[1, j] - value_range[0, j])
 
-    return np.asarray(normalized_value)
+    return normalized_value.base
 
 cpdef denormalize_np(np.ndarray[np.float64_t, ndim=1] norm_value,  np.ndarray[np.float64_t, ndim=2] value_range):
     actual_value = value_range[0] + 0.5 * (norm_value + 1) * (value_range[1] - value_range[0])
@@ -318,7 +318,7 @@ cpdef denormalize(double[::1] norm_value, double[:, :] value_range):
     cdef double[::1] actual_value = np.empty((num_joints,))
     for i in range(num_joints):
         actual_value[i] =  value_range[0, i] + 0.5 * (norm_value[i] + 1) * (value_range[1, i] - value_range[0, i])
-    return np.asarray(actual_value)
+    return actual_value.base
 
 cpdef denormalize_parallel(double[::1] norm_value, double[:, :] value_range):
     cdef int num_joints = norm_value.shape[0]
@@ -326,7 +326,7 @@ cpdef denormalize_parallel(double[::1] norm_value, double[:, :] value_range):
     cdef double[::1] actual_value = np.empty((num_joints,))
     for i in prange(num_joints, nogil=True, schedule='static'):
         actual_value[i] =  value_range[0, i] + 0.5 * (norm_value[i] + 1) * (value_range[1, i] - value_range[0, i])
-    return np.asarray(actual_value)
+    return actual_value.base
 
 cpdef denormalize_batch_np(np.ndarray[np.float64_t, ndim=2] norm_value, np.ndarray[np.float64_t, ndim=2] value_range):
     actual_value = value_range[0] + 0.5 * (norm_value + 1) * (value_range[1] - value_range[0])
@@ -342,7 +342,7 @@ cpdef denormalize_batch(double[:, :] norm_value, double[:, :] value_range):
         for j in range(num_joints):
             actual_value[i, j] = value_range[0, j] + 0.5 * (norm_value[i, j] + 1) * (value_range[1, j] - value_range[0, j])
             
-    return np.asarray(actual_value)
+    return actual_value.base
 
 cpdef denormalize_batch_parallel(double[:, :] norm_value, double[:, :] value_range):
     cdef int num_steps = norm_value.shape[0]
@@ -354,7 +354,7 @@ cpdef denormalize_batch_parallel(double[:, :] norm_value, double[:, :] value_ran
         for j in range(num_joints):
             actual_value[i, j] = value_range[0, j] + 0.5 * (norm_value[i, j] + 1) * (value_range[1, j] - value_range[0, j])
 
-    return np.asarray(actual_value)
+    return actual_value.base
 
 cpdef calculate_end_position_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
                                 np.ndarray[np.float64_t, ndim=1] start_velocity, np.ndarray[np.float64_t, ndim=1] start_position,
@@ -373,7 +373,7 @@ cpdef calculate_end_position(double[::1] start_acceleration, double[::1] end_acc
         end_position[i] = start_position[i] + start_velocity[i] * trajectory_time_step + \
                           (0.33333333333333333 * start_acceleration[i] + 0.16666666666666666 * end_acceleration[i]) * trajectory_time_step ** 2                   
   
-    return np.asarray(end_position)
+    return end_position.base
 
 cpdef calculate_end_position_parallel(double[::1] start_acceleration, double[::1] end_acceleration, double[::1] start_velocity, 
                                       double[::1] start_position, double trajectory_time_step):
@@ -384,7 +384,7 @@ cpdef calculate_end_position_parallel(double[::1] start_acceleration, double[::1
         end_position[i] = start_position[i] + start_velocity[i] * trajectory_time_step + \
                           (0.33333333333333333 * start_acceleration[i] + 0.16666666666666666 * end_acceleration[i]) * trajectory_time_step ** 2                   
   
-    return np.asarray(end_position)
+    return end_position.base
 
 cpdef interpolate_position_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
                               np.ndarray[np.float64_t, ndim=1] start_velocity, np.ndarray[np.float64_t, ndim=1] start_position,
@@ -408,7 +408,7 @@ cpdef interpolate_position(double[::1] start_acceleration, double[::1] end_accel
                                    0.5 * start_acceleration[i] * time_since_start ** 2 + \
                                    0.16666666666666666 * ((end_acceleration[i] - start_acceleration[i]) / trajectory_time_step) * time_since_start ** 3
 
-    return np.asarray(interpolated_position)
+    return interpolated_position.base
 
 cpdef interpolate_position_parallel(double[::1] start_acceleration, double[::1] end_acceleration, 
                                     double[::1] start_velocity, double[::1] start_position,
@@ -421,7 +421,7 @@ cpdef interpolate_position_parallel(double[::1] start_acceleration, double[::1] 
                                    0.5 * start_acceleration[i] * time_since_start ** 2 + \
                                    0.16666666666666666 * ((end_acceleration[i] - start_acceleration[i]) / trajectory_time_step) * time_since_start ** 3
 
-    return np.asarray(interpolated_position)
+    return interpolated_position.base
 
 cpdef interpolate_position_batch_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
                                     np.ndarray[np.float64_t, ndim=1] start_velocity, np.ndarray[np.float64_t, ndim=1] start_position,
@@ -454,7 +454,7 @@ cpdef interpolate_position_batch(double[::1] start_acceleration, double[::1] end
                                           0.16666666666666666 * ((end_acceleration[j] - start_acceleration[j]) / 
                                           trajectory_time_step) * time_since_start[i] ** 3
 
-    return np.asarray(interpolated_position)
+    return interpolated_position.base
 
 cpdef interpolate_position_batch_parallel(double[::1] start_acceleration, double[::1] end_acceleration, 
                                           double[::1] start_velocity, double[::1] start_position,
@@ -471,7 +471,7 @@ cpdef interpolate_position_batch_parallel(double[::1] start_acceleration, double
                                           0.16666666666666666 * ((end_acceleration[j] - start_acceleration[j]) / 
                                           trajectory_time_step) * time_since_start[i] ** 3
 
-    return np.asarray(interpolated_position)
+    return interpolated_position.base
 
 cpdef calculate_end_velocity_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
                                 np.ndarray[np.float64_t, ndim=1] start_velocity, double trajectory_time_step):
@@ -489,7 +489,7 @@ cpdef calculate_end_velocity(double[::1] start_acceleration, double[::1] end_acc
     for i in range(num_joints): 
         end_velocity[i] = start_velocity[i] + 0.5 * (start_acceleration[i] + end_acceleration[i]) * trajectory_time_step 
 
-    return np.asarray(end_velocity)
+    return end_velocity.base
 
 cpdef calculate_end_velocity_parallel(double[::1] start_acceleration, double[::1] end_acceleration, 
                                       double[::1] start_velocity, double trajectory_time_step):
@@ -500,7 +500,7 @@ cpdef calculate_end_velocity_parallel(double[::1] start_acceleration, double[::1
     for i in prange(num_joints, nogil=True, schedule='static'): 
         end_velocity[i] = start_velocity[i] + 0.5 * (start_acceleration[i] + end_acceleration[i]) * trajectory_time_step 
 
-    return np.asarray(end_velocity)
+    return end_velocity.base
 
 
 cpdef interpolate_velocity_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
@@ -522,7 +522,7 @@ cpdef interpolate_velocity(double[::1] start_acceleration, double[::1] end_accel
                                    0.5 * ((end_acceleration[i] - start_acceleration[i]) /
                                         trajectory_time_step) * time_since_start ** 2
 
-    return np.asarray(interpolated_velocity)
+    return interpolated_velocity.base
 
 cpdef interpolate_velocity_parallel(double[::1] start_acceleration, double[::1] end_acceleration, 
                                     double[::1] start_velocity, double time_since_start, double trajectory_time_step):
@@ -534,7 +534,7 @@ cpdef interpolate_velocity_parallel(double[::1] start_acceleration, double[::1] 
                                    0.5 * ((end_acceleration[i] - start_acceleration[i]) /
                                         trajectory_time_step) * time_since_start ** 2
 
-    return np.asarray(interpolated_velocity)
+    return interpolated_velocity.base
 
 cpdef interpolate_velocity_batch_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
                                     np.ndarray[np.float64_t, ndim=1] start_velocity, np.ndarray[np.float64_t, ndim=1] time_since_start, double trajectory_time_step):
@@ -565,7 +565,7 @@ cpdef interpolate_velocity_batch(double[::1] start_acceleration, double[::1] end
                                    0.5 * ((end_acceleration[j] - start_acceleration[j]) /
                                    trajectory_time_step) * time_since_start[i] ** 2
 
-    return np.asarray(interpolated_velocity)
+    return interpolated_velocity.base
 
 cpdef interpolate_velocity_batch_parallel(double[::1] start_acceleration, double[::1] end_acceleration, 
                                           double[::1] start_velocity, double[::1] time_since_start, double trajectory_time_step):
@@ -581,7 +581,7 @@ cpdef interpolate_velocity_batch_parallel(double[::1] start_acceleration, double
                                    0.5 * ((end_acceleration[j] - start_acceleration[j]) /
                                    trajectory_time_step) * time_since_start[i] ** 2
 
-    return np.asarray(interpolated_velocity)
+    return interpolated_velocity.base
 
 cpdef interpolate_acceleration_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
                                   double time_since_start, double trajectory_time_step):
@@ -599,7 +599,7 @@ cpdef interpolate_acceleration(double[::1] start_acceleration, double[::1] end_a
         interpolated_acceleration[i] = start_acceleration[i] + ((end_acceleration[i] - start_acceleration[i]) /
                                     trajectory_time_step) * time_since_start
 
-    return np.asarray(interpolated_acceleration)
+    return interpolated_acceleration.base
 
 cpdef interpolate_acceleration_parallel(double[::1] start_acceleration, double[::1] end_acceleration, 
                                         double time_since_start, double trajectory_time_step):
@@ -610,7 +610,7 @@ cpdef interpolate_acceleration_parallel(double[::1] start_acceleration, double[:
         interpolated_acceleration[i] = start_acceleration[i] + ((end_acceleration[i] - start_acceleration[i]) /
                                     trajectory_time_step) * time_since_start
 
-    return np.asarray(interpolated_acceleration)
+    return interpolated_acceleration.base
 
 cpdef interpolate_acceleration_batch_np(np.ndarray[np.float64_t, ndim=1] start_acceleration, np.ndarray[np.float64_t, ndim=1] end_acceleration, 
                                         np.ndarray[np.float64_t, ndim=1] time_since_start, double trajectory_time_step):
@@ -637,7 +637,7 @@ cpdef interpolate_acceleration_batch(double[::1] start_acceleration, double[::1]
             interpolated_acceleration[i, j] = start_acceleration[j] + ((end_acceleration[j] - start_acceleration[j]) /
                                               trajectory_time_step) * time_since_start[i]
 
-    return np.asarray(interpolated_acceleration)
+    return interpolated_acceleration.base
 
 cpdef interpolate_acceleration_batch_parallel(double[::1] start_acceleration, double[::1] end_acceleration, 
                                               double[::1] time_since_start, double trajectory_time_step):
@@ -651,7 +651,7 @@ cpdef interpolate_acceleration_batch_parallel(double[::1] start_acceleration, do
             interpolated_acceleration[i, j] = start_acceleration[j] + ((end_acceleration[j] - start_acceleration[j]) /
                                               trajectory_time_step) * time_since_start[i]
 
-    return np.asarray(interpolated_acceleration)
+    return interpolated_acceleration.base
 
 cpdef get_num_threads():
     cdef int num_threads, i
@@ -739,8 +739,8 @@ cdef class PosVelJerkLimitation:
     def acc_limits(self, acc_limits):
         self._acc_limits = acc_limits
 
-    def calculate_valid_acceleration_range(self, double[:] current_pos, double[:] current_vel, double[:] current_acc, bint braking_trajectory=False,
-                                           int time_step_counter=0, double[:, :] limit_min_max=None, **kwargs):
+    cpdef calculate_valid_acceleration_range(self, double[:] current_pos, double[:] current_vel, double[:] current_acc, bint braking_trajectory=False,
+                                             int time_step_counter=0, double[:, :] limit_min_max=None):
         if limit_min_max is None:
             limit_min_max = np.ones((self._num_joints, 2))
         if current_pos is None:
@@ -821,7 +821,7 @@ cdef class PosVelJerkLimitation:
             acc_range_min_max = normalize_batch(acc_range_min_max, self._acc_limits_min_max)
             acc_range = acc_range_min_max.T
 
-        return acc_range, limit_violation
+        return acc_range.base, limit_violation.base
 
 
 
