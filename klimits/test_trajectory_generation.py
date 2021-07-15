@@ -24,14 +24,23 @@ from klimits import get_num_threads
 
 
 def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, pos_limit_factor, vel_limit_factor,
-                               acc_limit_factor, jerk_limit_factor, trajectory_duration, use_random_actions=True,
-                               constant_action=None, num_threads=1, no_plot=False, plot_safe_acc_limits=False,
-                               return_summary=False):
+                               acc_limit_factor, jerk_limit_factor, trajectory_duration,
+                               constant_action=None, num_threads=1, plot_joint=None, no_plot=False,
+                               plot_safe_acc_limits=False, seed=None, return_summary=False):
     acc_limits = [[acc_limit_factor * acc_limit[0], acc_limit_factor * acc_limit[1]] for acc_limit in acc_limits]
     max_jerks = [(acc_limit[1] - acc_limit[0]) / time_step for acc_limit in acc_limits]
     jerk_limits = [[-jerk_limit_factor * max_jerk, jerk_limit_factor * max_jerk] for max_jerk in max_jerks]
     vel_limits = [[vel_limit_factor * vel_limit[0], vel_limit_factor * vel_limit[1]] for vel_limit in vel_limits]
     pos_limits = [[pos_limit_factor * pos_limit[0], pos_limit_factor * pos_limit[1]] for pos_limit in pos_limits]
+
+    if constant_action is None:
+        use_random_actions = True
+        # if True: actions to generate the trajectory are randomly sampled
+        # if False: the constant action stored in constant_action is used at each decision step
+        if seed is not None:
+            np.random.seed(seed)
+    else:
+        use_random_actions = False
 
     if num_threads is None:
         logging.info("Using %s thread(s) to compute the range of safe accelerations.",
@@ -47,19 +56,25 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
                                           acceleration_after_max_vel_limit_factor=0.0001,
                                           normalize_acc_range=False, num_threads=num_threads)
 
-    trajectory_plotter = TrajectoryPlotter(time_step=time_step,
-                                           pos_limits=pos_limits,
-                                           vel_limits=vel_limits,
-                                           acc_limits=acc_limits,
-                                           jerk_limits=jerk_limits,
-                                           plot_joint=plot_joint,
-                                           plot_safe_acc_limits=plot_safe_acc_limits)
-
-    current_position = np.zeros(len(pos_limits))
-    current_velocity = np.zeros(len(vel_limits))
-    current_acceleration = np.zeros(len(acc_limits))
+    num_joints = len(pos_limits)
+    current_position = np.zeros(num_joints)
+    current_velocity = np.zeros(num_joints)
+    current_acceleration = np.zeros(num_joints)
 
     if not no_plot or return_summary:
+        if plot_joint is None:
+            plot_joint = [True] * num_joints  # plot all joints if not specified otherwise
+        else:
+            if num_joints != len(plot_joint):
+                raise ValueError("Expected plot_joint data for {} joints but received {}".format(num_joints,
+                                                                                                 len(plot_joint)))
+        trajectory_plotter = TrajectoryPlotter(time_step=time_step,
+                                               pos_limits=pos_limits,
+                                               vel_limits=vel_limits,
+                                               acc_limits=acc_limits,
+                                               jerk_limits=jerk_limits,
+                                               plot_joint=plot_joint,
+                                               plot_safe_acc_limits=plot_safe_acc_limits)
         trajectory_plotter.reset_plotter(current_position)
 
     logging.info("Calculating trajectory ...")
@@ -207,28 +222,13 @@ if __name__ == '__main__':
 
     trajectory_duration = args.trajectory_duration  # duration of the generated trajectory in seconds
 
-    if args.plot_joint is None:
-        plot_joint = [True] * num_joints  # plot all joints if not specified otherwise
-    else:
-        plot_joint = args.plot_joint
-        if num_joints != len(plot_joint):
-            raise ValueError("Expected plot_joint data for {} joints but received {}".format(num_joints,
-                                                                                             len(plot_joint)))
+    plot_joint = args.plot_joint
 
     plot_safe_acc_limits = args.plot_safe_acc_limits
     # True: The calculated range of safe accelerations is plotted with dashed lines
 
-    if args.constant_action is None:
-        use_random_actions = True
-        # if True: actions to generate the trajectory are randomly sampled
-        # if False: the constant action stored in constant_action is used at each decision step
-        if args.seed is not None:
-            np.random.seed(args.seed)
-        constant_action = None
-    else:
-        use_random_actions = False
-        constant_action = args.constant_action  # scalar within [-1, 1]
-
+    constant_action = args.constant_action  # scalar within [-1, 1] or None -> random actions
+    seed = args.seed  # if not None: seed of the random number generator
     num_threads = args.num_threads  # number of threads to use for the computation
     no_plot = args.no_plot  # whether to plot the generated trajectory
 
@@ -238,6 +238,7 @@ if __name__ == '__main__':
                                acc_limits=acc_limits, pos_limit_factor=pos_limit_factor,
                                vel_limit_factor=vel_limit_factor, acc_limit_factor=acc_limit_factor,
                                jerk_limit_factor=jerk_limit_factor, trajectory_duration=trajectory_duration,
-                               use_random_actions=use_random_actions, constant_action=constant_action,
-                               num_threads=num_threads, no_plot=no_plot, plot_safe_acc_limits=plot_safe_acc_limits,
-                               return_summary=False)
+                               constant_action=constant_action,
+                               num_threads=num_threads, plot_joint=plot_joint,
+                               no_plot=no_plot, plot_safe_acc_limits=plot_safe_acc_limits,
+                               seed=seed, return_summary=False)
