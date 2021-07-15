@@ -22,6 +22,86 @@ from klimits import calculate_end_position as calculate_end_position
 from klimits import calculate_end_velocity as calculate_end_velocity
 from klimits import get_num_threads
 
+
+def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, pos_limit_factor, vel_limit_factor,
+                               acc_limit_factor, jerk_limit_factor, trajectory_duration, use_random_actions=True,
+                               constant_action=None, num_threads=1, no_plot=False, plot_safe_acc_limits=False,
+                               return_summary=False):
+    acc_limits = [[acc_limit_factor * acc_limit[0], acc_limit_factor * acc_limit[1]] for acc_limit in acc_limits]
+    max_jerks = [(acc_limit[1] - acc_limit[0]) / time_step for acc_limit in acc_limits]
+    jerk_limits = [[-jerk_limit_factor * max_jerk, jerk_limit_factor * max_jerk] for max_jerk in max_jerks]
+    vel_limits = [[vel_limit_factor * vel_limit[0], vel_limit_factor * vel_limit[1]] for vel_limit in vel_limits]
+    pos_limits = [[pos_limit_factor * pos_limit[0], pos_limit_factor * pos_limit[1]] for pos_limit in pos_limits]
+
+    if num_threads is None:
+        logging.info("Using %s thread(s) to compute the range of safe accelerations.",
+                     get_num_threads())
+    else:
+        logging.info("Using %s thread(s) to compute the range of safe accelerations.", num_threads)
+    logging.info("Note: The best performance is usually achieved by setting either --num_threads or OMP_NUM_THREADS to "
+                 "the number of physical (not virtual) CPU cores available on your system.")
+
+    acc_limitation = PosVelJerkLimitation(time_step=time_step,
+                                          pos_limits=pos_limits, vel_limits=vel_limits,
+                                          acc_limits=acc_limits, jerk_limits=jerk_limits,
+                                          acceleration_after_max_vel_limit_factor=0.0001,
+                                          normalize_acc_range=False, num_threads=num_threads)
+
+    trajectory_plotter = TrajectoryPlotter(time_step=time_step,
+                                           pos_limits=pos_limits,
+                                           vel_limits=vel_limits,
+                                           acc_limits=acc_limits,
+                                           jerk_limits=jerk_limits,
+                                           plot_joint=plot_joint,
+                                           plot_safe_acc_limits=plot_safe_acc_limits)
+
+    current_position = np.zeros(len(pos_limits))
+    current_velocity = np.zeros(len(vel_limits))
+    current_acceleration = np.zeros(len(acc_limits))
+
+    if not no_plot or return_summary:
+        trajectory_plotter.reset_plotter(current_position)
+
+    logging.info("Calculating trajectory ...")
+    trajectory_start_timer = timeit.default_timer()
+
+    for j in range(round(trajectory_duration / time_step)):
+
+        # calculate the range of valid actions
+        safe_action_range, _ = acc_limitation.calculate_valid_acceleration_range(current_position,
+                                                                                 current_velocity,
+                                                                                 current_acceleration,
+                                                                                 time_step_counter=j)
+        # generate actions in range [-1, 1] for each joint
+        # Note: Action calculation is normally performed by a neural network
+        if use_random_actions:
+            action = np.random.uniform(low=-1, high=1, size=len(pos_limits))
+        else:
+            action = np.full(shape=len(pos_limits), fill_value=constant_action)
+
+        next_acceleration = denormalize(action, safe_action_range.T)
+
+        if not no_plot or return_summary:
+            trajectory_plotter.add_data_point(next_acceleration, safe_action_range)
+
+        next_position = calculate_end_position(current_acceleration, next_acceleration, current_velocity,
+                                               current_position, time_step)
+        next_velocity = calculate_end_velocity(current_acceleration, next_acceleration, current_velocity, time_step)
+
+        current_position = next_position
+        current_velocity = next_velocity
+        current_acceleration = next_acceleration
+
+    trajectory_end_timer = timeit.default_timer()
+    logging.info("Calculating a trajectory with a duration of %s s and a time step of %s s took %s s.",
+                 trajectory_duration, time_step, trajectory_end_timer - trajectory_start_timer)
+    if not no_plot:
+        trajectory_plotter.display_plot()
+
+    if return_summary:
+        return trajectory_plotter.get_trajectory_summary()
+
+
 if __name__ == '__main__':
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
@@ -37,8 +117,6 @@ if __name__ == '__main__':
                                                                             " [-1.71042266695, 1.71042266695]]'")
     parser.add_argument('--acc_limits', type=json.loads, default=None, help="acc_limits[num_joint][min/max] e.g. "
                                                                             "'[[-15, 15], [-7.5, 7.5]]'")
-    parser.add_argument('--plot_joint', type=json.loads, default=None, help="whether to plot the trajectory of the "
-                                                                            "corresponding joint e.g. '[1, 0]'")
     parser.add_argument('--pos_limit_factor', type=float, default=1.0, help="pos_limits are multiplied with "
                                                                             "the specified "
                                                                             "pos_limit_factor (0.0, 1.0], "
@@ -57,18 +135,20 @@ if __name__ == '__main__':
                                                                              "default: %(default)s")
     parser.add_argument('--trajectory_duration', type=float, default=10.0, help="duration of the generated trajectory "
                                                                                 "in seconds, default: %(default)s")
-    parser.add_argument('--plot_safe_acc_limits', action='store_true', default=False, help="plot the range of safe "
-                                                                                           "accelerations with dashed "
-                                                                                           "lines")
     parser.add_argument('--constant_action', type=float, default=None, help="a constant action [-1, 1] that "
                                                                             "is used at each decision step. If not "
                                                                             "specified, random actions are selected")
+    parser.add_argument('--plot_joint', type=json.loads, default=None, help="whether to plot the trajectory of the "
+                                                                            "corresponding joint e.g. '[1, 0]'")
+    parser.add_argument('--plot_safe_acc_limits', action='store_true', default=False, help="plot the range of safe "
+                                                                                           "accelerations with dashed "
+                                                                                           "lines")
+    parser.add_argument('--no_plot', action='store_true', default=False, help="if set, no plot is generated")
     parser.add_argument('--num_threads', type=int, default=None, help="the number of threads used for parallel "
                                                                       "execution. If not specified, the number of "
                                                                       "threads is either determined by the environment "
                                                                       "variable OMP_NUM_THREADS or by the number of "
                                                                       "logical CPU cores available on your system")
-    parser.add_argument('--no_plot', action='store_true', default=False, help="if set, no plot is generated")
     parser.add_argument('--seed', type=int, default=None, help="seed the generator of random actions with an integer "
                                                                "(for debugging purposes)")
 
@@ -144,81 +224,20 @@ if __name__ == '__main__':
         # if False: the constant action stored in constant_action is used at each decision step
         if args.seed is not None:
             np.random.seed(args.seed)
+        constant_action = None
     else:
         use_random_actions = False
         constant_action = args.constant_action  # scalar within [-1, 1]
 
-    num_threads = args.num_threads
+    num_threads = args.num_threads  # number of threads to use for the computation
+    no_plot = args.no_plot  # whether to plot the generated trajectory
 
     #  end of user settings -------------------------------------------------------------------------------
 
-    acc_limits = [[acc_limit_factor * acc_limit[0], acc_limit_factor * acc_limit[1]] for acc_limit in acc_limits]
-    max_jerks = [(acc_limit[1] - acc_limit[0]) / time_step for acc_limit in acc_limits]
-    jerk_limits = [[-jerk_limit_factor * max_jerk, jerk_limit_factor * max_jerk] for max_jerk in max_jerks]
-    vel_limits = [[vel_limit_factor * vel_limit[0], vel_limit_factor * vel_limit[1]] for vel_limit in vel_limits]
-    pos_limits = [[pos_limit_factor * pos_limit[0], pos_limit_factor * pos_limit[1]] for pos_limit in pos_limits]
-
-    if num_threads is None:
-        logging.info("Using %s thread(s) to compute the range of safe accelerations.",
-                     get_num_threads())
-    else:
-        logging.info("Using %s thread(s) to compute the range of safe accelerations.", num_threads)
-    logging.info("Note: The best performance is usually achieved by setting either --num_threads or OMP_NUM_THREADS to "
-                 "the number of physical (not virtual) CPU cores available on your system.")
-
-    acc_limitation = PosVelJerkLimitation(time_step=time_step,
-                                          pos_limits=pos_limits, vel_limits=vel_limits,
-                                          acc_limits=acc_limits, jerk_limits=jerk_limits,
-                                          acceleration_after_max_vel_limit_factor=0.0001,
-                                          normalize_acc_range=False, num_threads=num_threads)
-
-    trajectory_plotter = TrajectoryPlotter(time_step=time_step,
-                                           pos_limits=pos_limits,
-                                           vel_limits=vel_limits,
-                                           acc_limits=acc_limits,
-                                           jerk_limits=jerk_limits,
-                                           plot_joint=plot_joint,
-                                           plot_safe_acc_limits=plot_safe_acc_limits)
-
-    current_position = np.zeros(len(pos_limits))
-    current_velocity = np.zeros(len(vel_limits))
-    current_acceleration = np.zeros(len(acc_limits))
-
-    if not args.no_plot:
-        trajectory_plotter.reset_plotter(current_position)
-
-    logging.info("Calculating trajectory ...")
-    trajectory_start_timer = timeit.default_timer()
-
-    for j in range(round(trajectory_duration / time_step)):
-
-        # calculate the range of valid actions
-        safe_action_range, _ = acc_limitation.calculate_valid_acceleration_range(current_position,
-                                                                                 current_velocity,
-                                                                                 current_acceleration,
-                                                                                 time_step_counter=j)
-        # generate actions in range [-1, 1] for each joint
-        # Note: Action calculation is normally performed by a neural network
-        if use_random_actions:
-            action = np.random.uniform(low=-1, high=1, size=len(pos_limits))
-        else:
-            action = np.full(shape=len(pos_limits), fill_value=constant_action)
-
-        next_acceleration = denormalize(action, safe_action_range.T)
-
-        if not args.no_plot:
-            trajectory_plotter.add_data_point(next_acceleration, safe_action_range)
-
-        next_position = calculate_end_position(current_acceleration, next_acceleration, current_velocity,
-                                               current_position, time_step)
-        next_velocity = calculate_end_velocity(current_acceleration, next_acceleration, current_velocity, time_step)
-
-        current_position = next_position
-        current_velocity = next_velocity
-        current_acceleration = next_acceleration
-
-    trajectory_end_timer = timeit.default_timer()
-    logging.info("Calculating a trajectory with a duration of %s s and a time step of %s s took %s s.",
-                 trajectory_duration, args.time_step, trajectory_end_timer - trajectory_start_timer)
-    if not args.no_plot:
-        trajectory_plotter.display_plot()
+    test_trajectory_generation(time_step=time_step, pos_limits=pos_limits, vel_limits=vel_limits,
+                               acc_limits=acc_limits, pos_limit_factor=pos_limit_factor,
+                               vel_limit_factor=vel_limit_factor, acc_limit_factor=acc_limit_factor,
+                               jerk_limit_factor=jerk_limit_factor, trajectory_duration=trajectory_duration,
+                               use_random_actions=use_random_actions, constant_action=constant_action,
+                               num_threads=num_threads, no_plot=no_plot, plot_safe_acc_limits=plot_safe_acc_limits,
+                               return_summary=False)

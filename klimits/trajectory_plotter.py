@@ -260,6 +260,23 @@ class TrajectoryPlotter:
 
         self._time_step_counter = self._time_step_counter + 1
 
+    def get_trajectory_summary(self):
+        joint_sub_data = {'pos': np.swapaxes(self._sub_pos, 0, 1),
+                          'vel': np.swapaxes(self._sub_vel, 0, 1),
+                          'acc': np.swapaxes(self._sub_acc, 0, 1),
+                          'jerk': np.swapaxes(self._sub_jerk, 0, 1)}
+
+        trajectory_summary = {}
+
+        for key, value in joint_sub_data.items():
+            trajectory_summary[key] = []
+            for joint_data in value:
+                trajectory_summary[key].append({'min': np.min(joint_data),
+                                                'max': np.max(joint_data),
+                                                'final': joint_data[-1]})
+
+        return trajectory_summary
+
 
 def normalize_slow(value, value_range):
     normalized_value = -1 + 2 * (value - value_range[0]) / (value_range[1] - value_range[0])
