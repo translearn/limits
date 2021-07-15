@@ -108,8 +108,8 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
         current_acceleration = next_acceleration
 
     trajectory_end_timer = timeit.default_timer()
-    logging.info("Calculating a trajectory with a duration of %s s and a time step of %s s took %s s.",
-                 trajectory_duration, time_step, trajectory_end_timer - trajectory_start_timer)
+    logging.info("Calculating a trajectory with a duration of %s s and a time step of %s s took %s s for %s joints.",
+                 trajectory_duration, time_step, trajectory_end_timer - trajectory_start_timer, num_joints)
     if not no_plot:
         trajectory_plotter.display_plot()
 
