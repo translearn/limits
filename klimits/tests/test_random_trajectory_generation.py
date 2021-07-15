@@ -1,4 +1,5 @@
 import pytest
+import pytest_check as check
 
 from klimits.test_trajectory_generation import test_trajectory_generation
 
@@ -28,7 +29,7 @@ from klimits.test_trajectory_generation import test_trajectory_generation
 @pytest.mark.parametrize("pos_limit_factor", [0.2, 0.5, 1.0])
 @pytest.mark.parametrize("vel_limit_factor", [0.2, 0.5, 1.0])
 @pytest.mark.parametrize("acc_limit_factor", [0.2, 0.5, 1.0])
-@pytest.mark.parametrize("jerk_limit_factor", [0.2, 0.5, 1.0])
+@pytest.mark.parametrize("jerk_limit_factor", [0.1, 0.2, 0.5, 1.0])
 @pytest.mark.parametrize("trajectory_duration", [300])
 @pytest.mark.parametrize("seed", [1])
 def test_random_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, pos_limit_factor,
@@ -46,7 +47,7 @@ def test_random_trajectory_generation(time_step, pos_limits, vel_limits, acc_lim
 
     for key, value in trajectory_summary.items():
         for joint_index in range(len(value)):
-            assert -1.002 < value[joint_index]['min'], \
-                "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min'])
-            assert value[joint_index]['max'] < 1.002, \
-                "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max'])
+            check.greater(value[joint_index]['min'], -1.002,
+                          "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min']))
+            check.less(value[joint_index]['max'], 1.002,
+                       "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
