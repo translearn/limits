@@ -1,0 +1,112 @@
+import pytest
+import pytest_check as check
+
+from klimits.test_trajectory_generation import test_trajectory_generation
+
+
+@pytest.mark.parametrize("time_step", [0.05, 0.1])
+@pytest.mark.parametrize("pos_limits", [[[-2.96705972839, 2.96705972839],
+                                         [-2.09439510239, 2.09439510239],
+                                         [-2.96705972839, 2.96705972839],
+                                         [-2.09439510239, 2.09439510239],
+                                         [-2.96705972839, 2.96705972839],
+                                         [-2.09439510239, 2.09439510239],
+                                         [-3.05432619099, 3.05432619099]]])
+@pytest.mark.parametrize("vel_limits", [[[-1.71042266695, 1.71042266695],
+                                         [-1.71042266695, 1.71042266695],
+                                         [-1.74532925199, 1.74532925199],
+                                         [-2.26892802759, 2.26892802759],
+                                         [-2.44346095279, 2.44346095279],
+                                         [-3.14159265359, 3.14159265359],
+                                         [-3.14159265359, 3.14159265359]]])
+@pytest.mark.parametrize("acc_limits", [[[-15.0, 15.0],
+                                         [-7.5, 7.5],
+                                         [-10.0, 10.0],
+                                         [-12.5, 12.5],
+                                         [-15.0, 15.0],
+                                         [-20.0, 20.0],
+                                         [-20.0, 20.0]]])
+@pytest.mark.parametrize("pos_limit_factor", [0.2, 0.5, 1.0])
+@pytest.mark.parametrize("vel_limit_factor", [0.2, 0.5, 1.0])
+@pytest.mark.parametrize("acc_limit_factor", [0.2, 0.5, 1.0])
+@pytest.mark.parametrize("jerk_limit_factor", [0.1, 0.2, 0.5, 1.0])
+@pytest.mark.parametrize("trajectory_duration", [300])
+@pytest.mark.parametrize("seed", [1])
+def test_max_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, pos_limit_factor,
+                                   vel_limit_factor, acc_limit_factor, jerk_limit_factor, trajectory_duration,
+                                   seed):
+    trajectory_summary = test_trajectory_generation(time_step=time_step, pos_limits=pos_limits, vel_limits=vel_limits,
+                                                    acc_limits=acc_limits, pos_limit_factor=pos_limit_factor,
+                                                    vel_limit_factor=vel_limit_factor,
+                                                    acc_limit_factor=acc_limit_factor,
+                                                    jerk_limit_factor=jerk_limit_factor,
+                                                    trajectory_duration=trajectory_duration,
+                                                    constant_action=1.0, num_threads=1, plot_joint=None,
+                                                    no_plot=True, plot_safe_acc_limits=False, seed=seed,
+                                                    return_summary=True)
+
+    for key, value in trajectory_summary.items():
+        for joint_index in range(len(value)):
+            check.greater(value[joint_index]['min'], -1.005,
+                          "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min']))
+            check.less(value[joint_index]['max'], 1.005,
+                       "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
+
+    for joint_index in range(len(trajectory_summary['pos'])):
+        check.greater(trajectory_summary['pos'][joint_index]['final'], 0.96,
+                      "final pos too small, joint {}, value {}".format(joint_index,
+                                                                       trajectory_summary['pos'][joint_index]['final']))
+
+
+@pytest.mark.parametrize("time_step", [0.05, 0.1])
+@pytest.mark.parametrize("pos_limits", [[[-2.96705972839, 2.96705972839],
+                                         [-2.09439510239, 2.09439510239],
+                                         [-2.96705972839, 2.96705972839],
+                                         [-2.09439510239, 2.09439510239],
+                                         [-2.96705972839, 2.96705972839],
+                                         [-2.09439510239, 2.09439510239],
+                                         [-3.05432619099, 3.05432619099]]])
+@pytest.mark.parametrize("vel_limits", [[[-1.71042266695, 1.71042266695],
+                                         [-1.71042266695, 1.71042266695],
+                                         [-1.74532925199, 1.74532925199],
+                                         [-2.26892802759, 2.26892802759],
+                                         [-2.44346095279, 2.44346095279],
+                                         [-3.14159265359, 3.14159265359],
+                                         [-3.14159265359, 3.14159265359]]])
+@pytest.mark.parametrize("acc_limits", [[[-15.0, 15.0],
+                                         [-7.5, 7.5],
+                                         [-10.0, 10.0],
+                                         [-12.5, 12.5],
+                                         [-15.0, 15.0],
+                                         [-20.0, 20.0],
+                                         [-20.0, 20.0]]])
+@pytest.mark.parametrize("pos_limit_factor", [0.2, 0.5, 1.0])
+@pytest.mark.parametrize("vel_limit_factor", [0.2, 0.5, 1.0])
+@pytest.mark.parametrize("acc_limit_factor", [0.2, 0.5, 1.0])
+@pytest.mark.parametrize("jerk_limit_factor", [0.1, 0.2, 0.5, 1.0])
+@pytest.mark.parametrize("trajectory_duration", [300])
+@pytest.mark.parametrize("seed", [1])
+def test_min_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, pos_limit_factor,
+                                   vel_limit_factor, acc_limit_factor, jerk_limit_factor, trajectory_duration,
+                                   seed):
+    trajectory_summary = test_trajectory_generation(time_step=time_step, pos_limits=pos_limits, vel_limits=vel_limits,
+                                                    acc_limits=acc_limits, pos_limit_factor=pos_limit_factor,
+                                                    vel_limit_factor=vel_limit_factor,
+                                                    acc_limit_factor=acc_limit_factor,
+                                                    jerk_limit_factor=jerk_limit_factor,
+                                                    trajectory_duration=trajectory_duration,
+                                                    constant_action=-1.0, num_threads=1, plot_joint=None,
+                                                    no_plot=True, plot_safe_acc_limits=False, seed=seed,
+                                                    return_summary=True)
+
+    for key, value in trajectory_summary.items():
+        for joint_index in range(len(value)):
+            check.greater(value[joint_index]['min'], -1.005,
+                          "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min']))
+            check.less(value[joint_index]['max'], 1.005,
+                       "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
+
+    for joint_index in range(len(trajectory_summary['pos'])):
+        check.less(trajectory_summary['pos'][joint_index]['final'], -0.96,
+                   "final pos too high, joint {}, value {}".format(joint_index,
+                                                                   trajectory_summary['pos'][joint_index]['final']))

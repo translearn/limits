@@ -47,7 +47,7 @@ def test_random_trajectory_generation(time_step, pos_limits, vel_limits, acc_lim
 
     for key, value in trajectory_summary.items():
         for joint_index in range(len(value)):
-            check.greater(value[joint_index]['min'], -1.002,
+            check.greater(value[joint_index]['min'], -1.005,
                           "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min']))
-            check.less(value[joint_index]['max'], 1.002,
+            check.less(value[joint_index]['max'], 1.005,
                        "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))

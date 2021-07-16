@@ -77,6 +77,8 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
                                                plot_safe_acc_limits=plot_safe_acc_limits)
         trajectory_plotter.reset_plotter(current_position)
 
+    if not use_random_actions:
+        action = np.full(shape=len(pos_limits), fill_value=constant_action)
     logging.info("Calculating trajectory ...")
     trajectory_start_timer = timeit.default_timer()
 
@@ -91,8 +93,6 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
         # Note: Action calculation is normally performed by a neural network
         if use_random_actions:
             action = np.random.uniform(low=-1, high=1, size=len(pos_limits))
-        else:
-            action = np.full(shape=len(pos_limits), fill_value=constant_action)
 
         next_acceleration = denormalize(action, safe_action_range.T)
 
