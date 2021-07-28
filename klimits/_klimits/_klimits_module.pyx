@@ -990,7 +990,7 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
                         a_1_upper_bound, t_v0_upper_bound = \
                             position_border_case_upper_bound(j, j_min, a_0, a_min, v_0, p_0, p_max, t_s, a_1_min_jerk)
                         if isnan(a_1_upper_bound):
-                            acc_range_dynamic_pos[j] = a_0 + j_min
+                            acc_range_dynamic_pos[j] = a_0 + j_min * t_s
                             continue
 
                         t_a_min_upper_bound = t_s * (1 + ((a_min - a_1_upper_bound) / (j_min * t_s)))
@@ -1274,8 +1274,8 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
     else:
         a_1_out_complex = pos_upper_bound_a1_max_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
 
-    if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
-                                             (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
+    if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-5) or
+                                             (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
         a_1_out = a_1_out_complex.real
     else:
         if min_max == 0:
@@ -1283,8 +1283,8 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
         else:
             a_1_out_complex = pos_upper_bound_a1_max_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
 
-        if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
-                                                 (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
+        if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-5) or
+                                                 (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
             a_1_out = a_1_out_complex.real
         else:
             if min_max == 0:
@@ -1298,8 +1298,8 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
                 a_1_out_complex = pos_upper_bound_a1_max_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in,
                                                              t_s_in)
 
-            if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
-                                                     (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
+            if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-5) or
+                                                     (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
                 a_1_out = a_1_out_complex.real
             else:
                 if min_max == 0:
@@ -1309,8 +1309,8 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
                     a_1_out_complex = pos_upper_bound_a1_max_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in,
                                                                  t_s_in)
 
-                if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
-                                                         (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
+                if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-5) or
+                                                         (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
                     a_1_out = a_1_out_complex.real
                 else:
                     a_1_out = nan
