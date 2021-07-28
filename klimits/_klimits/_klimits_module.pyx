@@ -667,7 +667,8 @@ cdef class PosVelJerkLimitation:
     cdef double _time_step 
     cdef int _num_joints, 
     cdef object _num_threads
-    cdef double[:, :] _jerk_limits, _acc_limits_min_max, _acc_limits_after_max_vel, _acc_limits, _vel_limits, _pos_limits
+    cdef double[:, :] _jerk_limits, _acc_limits_min_max, _acc_limits_after_max_vel, _acc_limits, _vel_limits, _pos_limits, 
+    cdef double[:, :] _acc_range_dynamic_vel, _acc_range_dynamic_pos, _acc_range_dynamic_pos_bounded_vel
     cdef bint _set_velocity_after_max_pos_to_zero, _limit_velocity, _limit_position, _soft_velocity_limits, _soft_position_limits, _normalize_acc_range
 
     def __init__(self,
@@ -704,8 +705,11 @@ cdef class PosVelJerkLimitation:
         self._soft_velocity_limits = soft_velocity_limits
         self._soft_position_limits = soft_position_limits
         self._normalize_acc_range = normalize_acc_range
-
         self._num_threads = num_threads
+
+        self._acc_range_dynamic_vel = np.empty((self._num_joints, 2))
+        self._acc_range_dynamic_pos = np.empty((self._num_joints, 2))
+        self._acc_range_dynamic_pos_bounded_vel = np.empty((self._num_joints, 2))
 
     @property
     def set_velocity_after_max_pos_to_zero(self):
@@ -749,8 +753,6 @@ cdef class PosVelJerkLimitation:
         cdef double[:, :] acc_range = np.empty((self._num_joints, 2))
         cdef double[:, :] acc_range_min_max
         cdef double[:] limit_violation = np.empty((self._num_joints,))
-        cdef double[:, :] acc_range_dynamic_vel = self._acc_limits.copy()
-        cdef double[:, :] acc_range_dynamic_pos = np.empty((self._num_joints, 2))
 
         cdef int i, limit_violation_joint, num_threads
         cdef double acc_range_min, acc_range_max
@@ -768,8 +770,9 @@ cdef class PosVelJerkLimitation:
                                                                  braking_trajectory, time_step_counter,
                                                                  limit_min_max[i], self._soft_velocity_limits,
                                                                  self._soft_position_limits,
-                                                                 acc_range_dynamic_vel[i],
-                                                                 acc_range_dynamic_pos[i])
+                                                                 self._acc_range_dynamic_vel[i],
+                                                                 self._acc_range_dynamic_pos[i],
+                                                                 self._acc_range_dynamic_pos_bounded_vel[i])
 
                 acc_range[i][0] = acc_range_min
                 acc_range[i][1] = acc_range_max
@@ -789,8 +792,9 @@ cdef class PosVelJerkLimitation:
                                                                      braking_trajectory, time_step_counter,
                                                                      limit_min_max[i], self._soft_velocity_limits,
                                                                      self._soft_position_limits,
-                                                                     acc_range_dynamic_vel[i],
-                                                                     acc_range_dynamic_pos[i])
+                                                                     self._acc_range_dynamic_vel[i],
+                                                                     self._acc_range_dynamic_pos[i],
+                                                                     self._acc_range_dynamic_pos_bounded_vel[i])
 
                     acc_range[i][0] = acc_range_min
                     acc_range[i][1] = acc_range_max
@@ -808,8 +812,9 @@ cdef class PosVelJerkLimitation:
                                                                      braking_trajectory, time_step_counter,
                                                                      limit_min_max[i], self._soft_velocity_limits,
                                                                      self._soft_position_limits,
-                                                                     acc_range_dynamic_vel[i],
-                                                                     acc_range_dynamic_pos[i])
+                                                                     self._acc_range_dynamic_vel[i],
+                                                                     self._acc_range_dynamic_pos[i],
+                                                                     self._acc_range_dynamic_pos_bounded_vel[i])
 
                     acc_range[i][0] = acc_range_min
                     acc_range[i][1] = acc_range_max
@@ -835,25 +840,32 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
                                                   double[:] limit_min_max, bint soft_velocity_limits, 
                                                   bint soft_position_limits,
                                                   double[:] acc_range_dynamic_vel,
-                                                  double[:] acc_range_dynamic_pos) nogil:
+                                                  double[:] acc_range_dynamic_pos,
+                                                  double[:] acc_range_dynamic_pos_bounded_vel) nogil:
     
 
-    cdef int j, nj, min_max, limit_violation_code
+    cdef int j, nj, min_max, limit_violation_code  
     cdef double acc_range_jerk_min, acc_range_jerk_max
     cdef double a, b, c, n, a1_limit, t_a0_1, a_n_plus_1
     cdef double j_min, j_max, a_min, p_max, a_0, v_0, p_0  
     cdef double a_1_all_phases, a_1_reduced_jerk, a_1_min_jerk, a_1_min_first, a_1_upper_bound, a_1_bounded_vel_discrete_all_phases, a_1_bounded_vel_discrete_min_jerk
+    cdef double a_1_bounded_vel_continuous_all_phases, a_1_bounded_vel_continuous_all_phases_2, a_t_n_a_min
     cdef double t_v0_bounded_vel_min_jerk_phase, t_v0_min_jerk, t_v0_min_first, t_v0_upper_bound, t_v0_all_phases, t_v0_reduced_jerk
-    cdef double t_u_bounded_vel_continuous_all_phases, t_u_bounded_vel_continuous_min_jerk, j_n_u_plus_1_all_phases, a_n_a_min, j_n_u_plus_1_min_jerk_phase
-    cdef double t_a_min, t_star_all_phases, t_a_min_upper_bound, t_n_u_all_phases, t_n_u_min_jerk_phase, t_star_min_jerk_phase
+    cdef double t_u_bounded_vel_continuous_all_phases, t_u_bounded_vel_continuous_all_phases_2, t_u_bounded_vel_continuous_min_jerk, j_n_u_plus_1_all_phases, a_n_a_min, j_n_u_plus_1_min_jerk_phase
+    cdef double t_a_min, t_n_a_min, t_n_a_min_phase, t_star_all_phases, t_a_min_upper_bound, t_n_u_all_phases, t_n_u_min_jerk_phase, t_n_u_min_jerk_phase_max, t_star_min_jerk_phase
     cdef double acc_range_min, acc_range_min_clipped, acc_range_max, acc_range_max_clipped
-    cdef bint second_phase
+    cdef double t_star_min_jerk_phase_int, t_n_u_min_jerk_phase_min_int, t_n_u_min_jerk_phase_max_int                     
+    cdef bint second_phase, check_t_n_a_min_recalculation, check_position_border_case_reduced_jerk_phase
 
     acc_range_jerk_min = current_acc + jerk_limits[0] * t_s
     acc_range_jerk_max = current_acc + jerk_limits[1] * t_s
 
+    acc_range_dynamic_vel[0] = acc_limits[0]
+    acc_range_dynamic_vel[1] = acc_limits[1]
     acc_range_dynamic_pos[0] = -1e6 
     acc_range_dynamic_pos[1] = 1e6
+    acc_range_dynamic_pos_bounded_vel[0] = nan
+    acc_range_dynamic_pos_bounded_vel[1] = nan
 
     if limit_velocity:
         if not braking_trajectory and (current_acc < 0 and (
@@ -945,7 +957,9 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
             a_1_all_phases = 0
             a_1_reduced_jerk = nan
             t_v0_bounded_vel_min_jerk_phase = nan
+            t_u_bounded_vel_continuous_all_phases = nan
             t_star_all_phases = nan
+            t_n_u_min_jerk_phase_max = nan
 
             a_1_min_jerk, t_v0_min_jerk = position_border_case_min_jerk_phase(j_min, a_0, v_0, p_0, p_max, t_s)
 
@@ -974,7 +988,7 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
 
                     if t_v0_min_jerk > t_a_min:
                         a_1_upper_bound, t_v0_upper_bound = \
-                            position_border_case_upper_bound(j, j_min, a_0, a_min, v_0, p_0, p_max, t_s)
+                            position_border_case_upper_bound(j, j_min, a_0, a_min, v_0, p_0, p_max, t_s, a_1_min_jerk)
                         if isnan(a_1_upper_bound):
                             acc_range_dynamic_pos[j] = a_0 + j_min
                             continue
@@ -989,126 +1003,153 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
                     a_1_all_phases, t_v0_all_phases = \
                         position_border_case_all_phases(j, j_min, a_0, a_min, v_0, p_0, p_max, t_s, t_n_a_min)
 
+                    check_t_n_a_min_recalculation = False
+                    check_position_border_case_reduced_jerk_phase = False
+
                     if t_v0_all_phases >= t_n_a_min + t_s:
                         acc_range_dynamic_pos[j] = a_1_all_phases
-
+    
                         if set_velocity_after_max_pos_to_zero:
                             t_star_all_phases = t_s * ceil(t_v0_all_phases / t_s)
-                            _, t_u_bounded_vel_continuous_all_phases = \
+
+                            a_1_bounded_vel_continuous_all_phases, t_u_bounded_vel_continuous_all_phases = \
                                 position_bounded_velocity_continuous_all_phases(j_min, j_max, a_0, a_min, v_0,
                                                                                 p_0, p_max, t_s,
-                                                                                t_star_all_phases, t_n_a_min)
+                                                                                t_star_all_phases, t_n_a_min, False)
+                           
+                            check_t_n_a_min_recalculation = (t_u_bounded_vel_continuous_all_phases < t_n_a_min + t_s or t_u_bounded_vel_continuous_all_phases >= t_star_all_phases) and (round(t_n_a_min / t_s) > 1)
+                    else:
+                        check_position_border_case_reduced_jerk_phase = True
+                        check_t_n_a_min_recalculation = (t_v0_all_phases >= t_n_a_min) and (round(t_n_a_min / t_s) > 1)
 
-                            if t_u_bounded_vel_continuous_all_phases >= t_star_all_phases:
-                                pass
+                    t_n_u_min_jerk_phase_max = t_n_a_min
 
-                            if t_u_bounded_vel_continuous_all_phases >= t_n_a_min + t_s:
+                    if t_v0_all_phases >= t_n_a_min + t_s or check_t_n_a_min_recalculation:
+                        if set_velocity_after_max_pos_to_zero:
+                            t_n_a_min_phase = t_n_a_min 
+                            if check_t_n_a_min_recalculation:
+                                t_star_all_phases = t_s * ceil(t_v0_all_phases / t_s)
+                                a_1_bounded_vel_continuous_all_phases_2, t_u_bounded_vel_continuous_all_phases_2 = \
+                                    position_bounded_velocity_continuous_all_phases(j_min, j_max, a_0, a_min, v_0,
+                                                                                    p_0, p_max, t_s,
+                                                                                    t_star_all_phases, t_n_a_min_phase - t_s, True)
+                                a_t_n_a_min = a_1_bounded_vel_continuous_all_phases_2 + (t_n_a_min_phase - 2 * t_s) * j_min
+                                if t_n_a_min_phase <= t_u_bounded_vel_continuous_all_phases_2 < t_star_all_phases and not ((j == 0 and a_t_n_a_min > a_min + 1e-6) or \
+                                    (j == 1 and a_t_n_a_min <= a_min - 1e-6)):  
+                                    t_n_a_min_phase = t_n_a_min_phase - t_s
+                                    t_u_bounded_vel_continuous_all_phases = t_u_bounded_vel_continuous_all_phases_2
+                                else:
+                                    pass
+
+                            if not isnan(t_u_bounded_vel_continuous_all_phases) and t_n_a_min_phase + t_s <= t_u_bounded_vel_continuous_all_phases < t_star_all_phases:
                                 t_n_u_all_phases = t_s * floor(t_u_bounded_vel_continuous_all_phases / t_s)
                                 a_1_bounded_vel_discrete_all_phases, j_n_u_plus_1_all_phases = \
                                     position_bounded_velocity_discrete_all_phases(j_min, j_max, a_0, a_min, v_0,
                                                                                   p_0, p_max, t_s,
-                                                                                  t_star_all_phases, t_n_a_min,
+                                                                                  t_star_all_phases, t_n_a_min_phase,
                                                                                   t_n_u_all_phases)
+    
+                                a_n_a_min = a_1_bounded_vel_discrete_all_phases + (t_n_a_min_phase - t_s) * j_min
+                                j_n_a_min_norm = (a_min - a_n_a_min) / (t_s * j_min)
+                                if (j == 0 and a_n_a_min > a_min + 1e-6) or \
+                                        (j == 1 and a_n_a_min < a_min - 1e-6):
 
-                                a_n_a_min = a_1_bounded_vel_discrete_all_phases + (t_n_a_min - t_s) * j_min
-                                if (j == 0 and a_n_a_min > a_min + 1e-3) or \
-                                        (j == 1 and a_n_a_min < a_min - 1e-3):
-
-                                    if round(t_n_a_min / t_s) > 1:
+                                    if round(t_n_a_min_phase / t_s) > 1:
                                         a_1_bounded_vel_discrete_all_phases, j_n_u_plus_1_all_phases = \
                                             position_bounded_velocity_discrete_all_phases(j_min, j_max, a_0,
                                                                                           a_min, v_0, p_0,
                                                                                           p_max, t_s,
                                                                                           t_star_all_phases,
-                                                                                          t_n_a_min - t_s,
+                                                                                          t_n_a_min_phase - t_s,
                                                                                           t_n_u_all_phases)
-
+    
                                         a_n_a_min = a_1_bounded_vel_discrete_all_phases + (
-                                                t_n_a_min - 2 * t_s) * j_min
+                                                t_n_a_min_phase - 2 * t_s) * j_min
+                                        j_n_a_min_norm = (a_min - a_n_a_min) / (t_s * j_min)
+                                
 
-                                if (j == 0 and a_n_a_min > a_min + 1e-3) or \
-                                        (j == 1 and a_n_a_min < a_min - 1e-3):
+                                if (j == 0 and a_n_a_min > a_min + 1e-6) or \
+                                        (j == 1 and a_n_a_min < a_min - 1e-6):
                                     pass
                                 else:
-                                    if (j == 0 and j_max <= j_n_u_plus_1_all_phases <= 0) or \
-                                            (j == 1 and 0 <= j_n_u_plus_1_all_phases <= j_max):
+                                    if j_n_a_min_norm <= 1.00 + 1e-6:
+                                        if (j == 0 and j_max <= j_n_u_plus_1_all_phases <= 0) or \
+                                                (j == 1 and 0 <= j_n_u_plus_1_all_phases <= j_max):
 
-                                        if (j == 0 and a_1_bounded_vel_discrete_all_phases > a_1_all_phases) or \
-                                                (j == 1 and a_1_bounded_vel_discrete_all_phases < a_1_all_phases):
-
-                                            acc_range_dynamic_pos[j] = a_1_bounded_vel_discrete_all_phases
+                                            if (j == 0 and a_1_bounded_vel_discrete_all_phases > a_1_all_phases) or \
+                                                    (j == 1 and a_1_bounded_vel_discrete_all_phases < a_1_all_phases):
+                                                if (j == 0 and
+                                                    a_1_bounded_vel_discrete_all_phases < acc_range_jerk_max + 1e-6) \
+                                                        or (j == 1 and a_1_bounded_vel_discrete_all_phases >
+                                                            acc_range_jerk_min - 1e-6):
+                                                    acc_range_dynamic_pos_bounded_vel[j] = \
+                                                        a_1_bounded_vel_discrete_all_phases
+                                                    check_position_border_case_reduced_jerk_phase = False
+                                            else:
+                                                pass
                                         else:
                                             pass
                                     else:
-                                        pass
+                                        t_v0_bounded_vel_min_jerk_phase = t_v0_all_phases 
+
                             else:
                                 t_v0_bounded_vel_min_jerk_phase = t_v0_all_phases
-                    else:
+                    if check_position_border_case_reduced_jerk_phase:
+                        t_star_all_phases = nan
                         if set_velocity_after_max_pos_to_zero:
                             t_v0_bounded_vel_min_jerk_phase = t_v0_all_phases
-
-                        a_1_reduced_jerk, t_v0_reduced_jerk = position_border_case_reduced_jerk_phase(j_min, a_0, a_min, 
-                                                                                                      v_0, p_0, p_max, t_s,
-                                                                                                      t_n_a_min)
-
+    
+                        a_1_reduced_jerk, t_v0_reduced_jerk = position_border_case_reduced_jerk_phase(j_min, a_0, a_min,
+                                                                                                      v_0, p_0, p_max,
+                                                                                                      t_s, t_n_a_min)
+    
                         acc_range_dynamic_pos[j] = a_1_reduced_jerk
 
                 if set_velocity_after_max_pos_to_zero and not isnan(t_v0_bounded_vel_min_jerk_phase):
-                    t_star_min_jerk_phase = t_s * ceil(t_v0_bounded_vel_min_jerk_phase / t_s)
+                    t_star_min_jerk_phase_int = ceil(t_v0_bounded_vel_min_jerk_phase / t_s)
+                    t_star_min_jerk_phase = t_s * t_star_min_jerk_phase_int
+                    t_n_u_min_jerk_phase_min_int = fmax(t_star_min_jerk_phase_int -
+                                                       (1 + floor(-a_min / (j_max * t_s))), 1)
+                    if isnan(t_n_u_min_jerk_phase_max):
+                        t_n_u_min_jerk_phase_max_int = t_star_min_jerk_phase_int - 1
+                    else:
+                        t_n_u_min_jerk_phase_max_int = round(t_n_u_min_jerk_phase_max / t_s)
 
-                    if t_star_min_jerk_phase >= 3 * t_s:
-                        _, t_u_bounded_vel_continuous_min_jerk = \
-                            position_bounded_velocity_continuous_min_jerk_phase(j_min, j_max, a_0, v_0, p_0,
-                                                                                p_max, t_s,
-                                                                                t_star_min_jerk_phase)
-
-                        if not isnan(t_u_bounded_vel_continuous_min_jerk) and \
-                                (t_u_bounded_vel_continuous_min_jerk / t_s) > 0.99:
-                            t_n_u_min_jerk_phase = fmax(t_s * floor(t_u_bounded_vel_continuous_min_jerk / t_s),
-                                                        t_s)
-                        else:
-                            t_n_u_min_jerk_phase = nan
+                    if t_n_u_min_jerk_phase_min_int > t_n_u_min_jerk_phase_max_int:
+                        t_n_u_min_jerk_phase_min_int = nan
+        
+                    if not isnan(t_n_u_min_jerk_phase_min_int):
+                        a_1_bounded_vel_discrete_min_jerk, j_n_u_plus_1_min_jerk_phase, t_n_u_min_jerk_phase = \
+                            position_bounded_velocity_discrete_min_jerk_phase_range(j, j_min, j_max, a_0, a_min, v_0,
+                                                                                    p_0, p_max, t_s,
+                                                                                    t_star_min_jerk_phase,
+                                                                                    (<int>t_n_u_min_jerk_phase_min_int),
+                                                                                    (<int>t_n_u_min_jerk_phase_max_int))
 
                     else:
-                        t_n_u_min_jerk_phase = t_s
+                        a_1_bounded_vel_discrete_min_jerk = nan
 
-                    if not isnan(t_n_u_min_jerk_phase):
-                        a_1_bounded_vel_discrete_min_jerk, j_n_u_plus_1_min_jerk_phase = \
-                            position_bounded_velocity_discrete_min_jerk_phase(j_min, j_max, a_0, v_0, p_0,
-                                                                              p_max, t_s,
-                                                                              t_star_min_jerk_phase,
-                                                                              t_n_u_min_jerk_phase)
+                    if not isnan(a_1_bounded_vel_discrete_min_jerk) and \
+                            ((j == 0 and a_1_bounded_vel_discrete_min_jerk > acc_range_dynamic_pos[j]) or
+                             (j == 1 and a_1_bounded_vel_discrete_min_jerk < acc_range_dynamic_pos[j])):
 
-                        if (j == 0 and j_max - 1e-6 <= j_n_u_plus_1_min_jerk_phase <= j_min + 1e-6) or \
-                                (j == 1 and j_min - 1e-6 <= j_n_u_plus_1_min_jerk_phase <= j_max + 1e-6):
-
-                            if not isnan(t_star_all_phases):
-                                if (j == 0 and a_1_bounded_vel_discrete_min_jerk > a_1_all_phases) or \
-                                        (j == 1 and a_1_bounded_vel_discrete_min_jerk < a_1_all_phases):
-
-                                    acc_range_dynamic_pos[j] = a_1_bounded_vel_discrete_min_jerk
-                                else:
-                                    pass
-                            else:
-                                if not isnan(a_1_reduced_jerk):
-                                    if (j == 0 and a_1_bounded_vel_discrete_min_jerk > a_1_reduced_jerk) or \
-                                            (j == 1 and a_1_bounded_vel_discrete_min_jerk < a_1_reduced_jerk):
-                                        acc_range_dynamic_pos[j] = a_1_bounded_vel_discrete_min_jerk
-                                    else:
-                                        pass
-                                else:
-                                    if (j == 0 and a_1_bounded_vel_discrete_min_jerk > a_1_min_jerk) or \
-                                            (j == 1 and a_1_bounded_vel_discrete_min_jerk < a_1_min_jerk):
-                                        acc_range_dynamic_pos[j] = a_1_bounded_vel_discrete_min_jerk
-                                    else:
-                                        pass
-                        else:
-                            pass
+                        acc_range_dynamic_pos_bounded_vel[j] = a_1_bounded_vel_discrete_min_jerk
                     else:
                         pass
 
             if isnan(acc_range_dynamic_pos[j]):
                 acc_range_dynamic_pos[j] = acc_limits[j]
+
+            if isnan(acc_range_dynamic_pos_bounded_vel[j]):
+                acc_range_dynamic_pos_bounded_vel[j] = acc_range_dynamic_pos[j]
+
+        if (acc_range_dynamic_pos_bounded_vel[0] - acc_range_dynamic_pos_bounded_vel[1]) < 0.001:
+            if acc_range_dynamic_pos_bounded_vel[0] > acc_range_dynamic_pos_bounded_vel[1]:
+                acc_range_dynamic_pos_bounded_vel[0] = 0.5 * (acc_range_dynamic_pos_bounded_vel[0] +
+                                                              acc_range_dynamic_pos_bounded_vel[1])
+                acc_range_dynamic_pos_bounded_vel[1] = acc_range_dynamic_pos_bounded_vel[0]
+            acc_range_dynamic_pos[0] = acc_range_dynamic_pos_bounded_vel[0]
+            acc_range_dynamic_pos[1] = acc_range_dynamic_pos_bounded_vel[1]
 
     if limit_velocity:
         if soft_velocity_limits:
@@ -1134,14 +1175,14 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
 
     acc_range_min = acc_range_jerk_min
     acc_range_max = acc_range_jerk_max
-
+    
     if limit_velocity:
         acc_range_min = fmax(acc_range_min, acc_range_dynamic_vel[0])
         acc_range_max = fmin(acc_range_max, acc_range_dynamic_vel[1])
     if limit_position:
         acc_range_min = fmax(acc_range_min, acc_range_dynamic_pos[0])
         acc_range_max = fmin(acc_range_max, acc_range_dynamic_pos[1])
-
+    
     if (acc_range_min - acc_range_max) > 0.001:
         limit_violation_code = limit_violation_code + 1
         if limit_position and limit_velocity:
@@ -1158,15 +1199,16 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
             else:
                 acc_range_min = acc_range_dynamic_pos[0]
                 acc_range_max = acc_range_dynamic_pos[1]
-  
+    
     if acc_range_min > acc_range_max:
+        acc_range_min = 0.5 * (acc_range_min + acc_range_max)
         acc_range_max = acc_range_min
-        
+    
     acc_range_min_clipped = fmin(acc_limits[1], fmax(acc_range_min, acc_limits[0]))
     acc_range_max_clipped = fmin(acc_limits[1], fmax(acc_range_max, acc_limits[0]))
-
-    if (acc_range_min_clipped != acc_range_min) or (acc_range_max_clipped != acc_range_max):
-        limit_violation_code = limit_violation_code + 1
+    
+    if (acc_range_max < acc_limits[0] - 1e-6) or (acc_range_min > acc_limits[1] + 1e-6):
+        limit_violation_code = 4
 
     return acc_range_min_clipped, acc_range_max_clipped, limit_violation_code
 
@@ -1218,7 +1260,8 @@ cdef (double, double) position_border_case_first_phase(int min_max, double a_0_i
 
     return a_1_out, t_v0_out
 
-cdef (double, double) position_border_case_upper_bound(int min_max, double j_min_in, double a_0_in, double a_min_in, double v_0_in, double p_0_in, double p_max_in, double t_s_in) nogil:
+cdef (double, double) position_border_case_upper_bound(int min_max, double j_min_in, double a_0_in, double a_min_in, double v_0_in, 
+                                                       double p_0_in, double p_max_in, double t_s_in, double a_1_max) nogil:
 
     cdef bint compute_t_v0 = False
 
@@ -1230,16 +1273,18 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
         a_1_out_complex = pos_upper_bound_a1_min_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
     else:
         a_1_out_complex = pos_upper_bound_a1_max_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
-                
-    if fabs(a_1_out_complex.imag) < 1e-3:
+
+    if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
+                                             (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
         a_1_out = a_1_out_complex.real
     else:
         if min_max == 0:
             a_1_out_complex = pos_upper_bound_a1_min_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
         else:
             a_1_out_complex = pos_upper_bound_a1_max_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
-                
-        if fabs(a_1_out_complex.imag) < 1e-3:
+
+        if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
+                                                 (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
             a_1_out = a_1_out_complex.real
         else:
             if min_max == 0:
@@ -1247,19 +1292,25 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
             else:
                 a_min_in = a_min_in + 0.02
             if min_max == 0:
-                a_1_out_complex = pos_upper_bound_a1_min_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
+                a_1_out_complex = pos_upper_bound_a1_min_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in,
+                                                             t_s_in)
             else:
-                a_1_out_complex = pos_upper_bound_a1_max_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
-                
-            if fabs(a_1_out_complex.imag) < 1e-3:
+                a_1_out_complex = pos_upper_bound_a1_max_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in,
+                                                             t_s_in)
+
+            if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
+                                                     (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
                 a_1_out = a_1_out_complex.real
             else:
                 if min_max == 0:
-                    a_1_out_complex = pos_upper_bound_a1_min_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
+                    a_1_out_complex = pos_upper_bound_a1_min_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in,
+                                                                 t_s_in)
                 else:
-                    a_1_out_complex = pos_upper_bound_a1_max_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
-                        
-                if fabs(a_1_out_complex.imag) < 1e-3:
+                    a_1_out_complex = pos_upper_bound_a1_max_5(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in,
+                                                                 t_s_in)
+
+                if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-6) or
+                                                         (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-6)):
                     a_1_out = a_1_out_complex.real
                 else:
                     a_1_out = nan
@@ -1310,9 +1361,7 @@ cdef (double, double) position_border_case_reduced_jerk_phase(double j_min_in, d
     return a_1_out, t_v0_out
 
 cdef (double, double) position_bounded_velocity_continuous_all_phases(double j_min_in, double j_max_in, double a_0_in, double a_min_in, double v_0_in, double p_0_in,
-                                                     double p_max_in, double t_s_in, double t_star_in, double t_n_a_min_in) nogil:
-
-    cdef bint compute_a_1 = False
+                                                     double p_max_in, double t_s_in, double t_star_in, double t_n_a_min_in, bint compute_a_1) nogil:
 
     cdef double t_u_out
     cdef double complex t_u_out_complex
@@ -1339,16 +1388,10 @@ cdef (double, double) position_bounded_velocity_discrete_all_phases(double j_min
                                                    double t_n_a_min_in, double t_n_u_in) nogil:
 
     cdef double j_n_u_plus_1_out
-    cdef double complex j_n_u_plus_1_out_complex
     cdef double a_1_out
     
-    j_n_u_plus_1_out_complex = pos_all_bounded_vel_discrete_j_n_u_plus_1(j_min_in, j_max_in, a_0_in, a_min_in, v_0_in, p_0_in,
-                                                                         p_max_in, t_s_in, t_star_in, t_n_a_min_in, t_n_u_in)
-
-    if fabs(j_n_u_plus_1_out_complex.imag) < 1e-8:
-        j_n_u_plus_1_out = j_n_u_plus_1_out_complex.real
-    else:
-        j_n_u_plus_1_out = nan
+    j_n_u_plus_1_out = pos_all_bounded_vel_discrete_j_n_u_plus_1(j_min_in, j_max_in, a_0_in, a_min_in, v_0_in, p_0_in,
+                                                                 p_max_in, t_s_in, t_star_in, t_n_a_min_in, t_n_u_in)
 
     a_1_out = pos_all_bounded_vel_discrete_a1(j_min_in, j_max_in, j_n_u_plus_1_out, a_0_in, a_min_in, v_0_in, t_s_in, 
                                               t_star_in, t_n_a_min_in, t_n_u_in)
@@ -1356,7 +1399,7 @@ cdef (double, double) position_bounded_velocity_discrete_all_phases(double j_min
     return a_1_out, j_n_u_plus_1_out
 
 cdef (double, double) position_bounded_velocity_continuous_min_jerk_phase(double j_min_in, double j_max_in, double a_0_in, double v_0_in, double p_0_in, 
-                                                         double p_max_in, double t_s_in, double t_star_in) nogil:
+                                                                          double p_max_in, double t_s_in, double t_star_in) nogil:
 
     cdef bint compute_a_1 = False
 
@@ -1384,19 +1427,48 @@ cdef (double, double) position_bounded_velocity_discrete_min_jerk_phase(double j
                                                        double p_max_in, double t_s_in, double t_star_in, double t_n_u_in) nogil:
 
     cdef double j_n_u_plus_1_out
-    cdef double complex j_n_u_plus_1_out_complex
     cdef double a_1_out
     
-    j_n_u_plus_1_out_complex = pos_min_jerk_bounded_vel_discrete_j_n_u_plus_1(j_min_in, j_max_in, a_0_in, 
-                                                                              v_0_in, p_0_in, p_max_in, 
-                                                                              t_s_in, t_star_in, t_n_u_in)
-
-    if fabs(j_n_u_plus_1_out_complex.imag) < 1e-8:
-        j_n_u_plus_1_out = j_n_u_plus_1_out_complex.real
-    else:
-        j_n_u_plus_1_out = nan
+    j_n_u_plus_1_out = pos_min_jerk_bounded_vel_discrete_j_n_u_plus_1(j_min_in, j_max_in, a_0_in, 
+                                                                      v_0_in, p_0_in, p_max_in, 
+                                                                      t_s_in, t_star_in, t_n_u_in)
 
     a_1_out = pos_min_jerk_bounded_vel_discrete_a1(j_min_in, j_max_in, j_n_u_plus_1_out, a_0_in, 
                                                    v_0_in, t_s_in, t_star_in, t_n_u_in)
 
     return a_1_out, j_n_u_plus_1_out
+
+cdef (double, double, double) position_bounded_velocity_discrete_min_jerk_phase_range(int min_max, double j_min_in, double j_max_in, 
+                                                                                      double a_0_in, double a_min_in, double v_0_in, double p_0_in, 
+                                                                                      double p_max_in, double t_s_in, double t_star_in, 
+                                                                                      int t_n_u_min_int_in, int t_n_u_max_int_in) nogil:
+
+    cdef bint valid_solution = False
+    cdef int i
+    cdef double t_n_u_in, j_n_u_plus_1_out, a_1_out, a_t_n_u, a_t_n_u_plus_1
+
+    for i in range(t_n_u_max_int_in, t_n_u_min_int_in - 1, -1):
+        t_n_u_in = t_s_in * i
+        j_n_u_plus_1_out = pos_min_jerk_bounded_vel_discrete_j_n_u_plus_1(j_min_in, j_max_in, a_0_in,
+                                                                          v_0_in, p_0_in, p_max_in,
+                                                                          t_s_in, t_star_in, t_n_u_in)
+
+        if (min_max == 0 and j_max_in - 1e-6 <= j_n_u_plus_1_out <= j_min_in + 1e-6) or \
+                (min_max == 1 and j_min_in - 1e-6 <= j_n_u_plus_1_out <= j_max_in + 1e-6):
+
+            a_1_out = pos_min_jerk_bounded_vel_discrete_a1(j_min_in, j_max_in, j_n_u_plus_1_out, a_0_in,
+                                                           v_0_in, t_s_in, t_star_in, t_n_u_in)
+
+            a_t_n_u = a_1_out + j_min_in * (t_n_u_in - t_s_in)
+            a_t_n_u_plus_1 = a_t_n_u + j_n_u_plus_1_out * t_s_in
+
+            if (min_max == 0 and a_t_n_u < a_min_in + 1e-6 and a_t_n_u_plus_1 < a_min_in + 1e-6 and a_1_out < a_0_in + j_min_in * t_s_in + 1e-6) or \
+                    (min_max == 1 and a_t_n_u > a_min_in - 1e-6 and a_t_n_u_plus_1 > a_min_in - 1e-6 and a_1_out > a_0_in + j_min_in * t_s_in - 1e-6):
+                valid_solution = True
+                break
+
+    if not valid_solution:
+        j_n_u_plus_1_out = nan
+        a_1_out = nan
+
+    return a_1_out, j_n_u_plus_1_out, t_n_u_in

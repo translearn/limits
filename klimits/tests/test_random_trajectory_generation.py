@@ -35,6 +35,7 @@ from klimits.test_trajectory_generation import test_trajectory_generation
 def test_random_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, pos_limit_factor,
                                       vel_limit_factor, acc_limit_factor, jerk_limit_factor, trajectory_duration,
                                       seed):
+
     trajectory_summary = test_trajectory_generation(time_step=time_step, pos_limits=pos_limits, vel_limits=vel_limits,
                                                     acc_limits=acc_limits, pos_limit_factor=pos_limit_factor,
                                                     vel_limit_factor=vel_limit_factor,
@@ -47,7 +48,14 @@ def test_random_trajectory_generation(time_step, pos_limits, vel_limits, acc_lim
 
     for key, value in trajectory_summary.items():
         for joint_index in range(len(value)):
-            check.greater(value[joint_index]['min'], -1.005,
-                          "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min']))
-            check.less(value[joint_index]['max'], 1.005,
-                       "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
+            if key == "violation_code":
+                check.less(value[joint_index]['max'], 1.0,
+                           "max violation code, joint {}, value {}".format(joint_index, value[joint_index]['max']))
+            else:
+                check.greater(value[joint_index]['min'], -1.005,
+                              "min {} violation, joint {}, value {}".format(key, joint_index,
+                                                                            value[joint_index]['min']))
+                check.less(value[joint_index]['max'], 1.005,
+                           "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
+
+

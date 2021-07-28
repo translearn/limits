@@ -25,12 +25,14 @@ class TrajectoryPlotter:
                  jerk_limits=None,
                  plot_joint=None,
                  plot_safe_acc_limits=False,
-                 plot_time_limits=None):
+                 plot_time_limits=None,
+                 plot_violation=False):
 
         self._time_step = time_step
         self._control_time_step = control_time_step
         self._plot_safe_acc_limits = plot_safe_acc_limits
         self._plot_time_limits = plot_time_limits
+        self._plot_violation = plot_violation
 
         self._plot_num_sub_time_steps = int(1000 * time_step)
         self._time_step_counter = None
@@ -44,6 +46,7 @@ class TrajectoryPlotter:
         self._vel = None
         self._acc = None
         self._jerk = None
+        self._violation = None
 
         self._sub_time = None
         self._sub_pos = None
@@ -63,9 +66,9 @@ class TrajectoryPlotter:
         self._num_joints = len(self._pos_limits)
 
         if plot_joint is None:
-            self._plotJoint = [True for _ in range(self._num_joints)]
+            self._plot_joint = [True for _ in range(self._num_joints)]
         else:
-            self._plotJoint = plot_joint
+            self._plot_joint = plot_joint
 
         self._episode_counter = 0
         self._zero_vector = np.zeros(self._num_joints)
@@ -95,6 +98,7 @@ class TrajectoryPlotter:
         self._vel = []
         self._acc = []
         self._jerk = []
+        self._violation = []
         self._current_acc_limits = []
         self._current_acc_limits.append([[0, 0] for _ in range(self._num_joints)])
 
@@ -103,7 +107,7 @@ class TrajectoryPlotter:
         self._pos.append(normalize(self._current_pos, self._pos_limits_min_max))
         self._vel.append(normalize(self._current_vel, self._vel_limits_min_max))
         self._acc.append(normalize(self._current_acc, self._acc_limits_min_max))
-        self._jerk.append(self._zero_vector.copy())  
+        self._jerk.append(self._zero_vector.copy())
 
         self._sub_time = [0]
         self._sub_pos = self._pos.copy()
@@ -114,6 +118,11 @@ class TrajectoryPlotter:
     def display_plot(self, max_time=None):
 
         num_subplots = 4
+        if self._plot_violation:
+            ax_violation = num_subplots
+            num_subplots = num_subplots + 1
+        else:
+            ax_violation = None
         fig, ax = plt.subplots(num_subplots, 1, sharex=True)
         plt.subplots_adjust(left=0.05, bottom=0.04, right=0.95, top=0.98, wspace=0.15, hspace=0.15)
         ax_pos = 0
@@ -137,10 +146,16 @@ class TrajectoryPlotter:
         if ax_acc is not None:
             ax[ax_acc].set_ylabel('Acceleration')
 
+        if ax_violation is not None:
+            ax[ax_violation].set_ylabel('Ignored')
+            ax[ax_violation].set_yticks(np.arange(5))
+            ax[ax_violation].set_yticklabels(['None', 'Jerk', 'Vel', 'Pos', 'Acc'])
+
         joint_pos = np.swapaxes(self._pos, 0, 1)
         joint_vel = np.swapaxes(self._vel, 0, 1)
         joint_acc = np.swapaxes(self._acc, 0, 1)
         joint_jerk = np.swapaxes(self._jerk, 0, 1)
+        joint_violation = np.swapaxes(self._violation, 0, 1)
 
         if self._plot_safe_acc_limits:
             joint_acc_limits = np.swapaxes(self._current_acc_limits, 0, 1)
@@ -177,7 +192,7 @@ class TrajectoryPlotter:
             color_limits = 'C' + str(j)
             marker = '.'
 
-            if self._plotJoint[j]:
+            if self._plot_joint[j]:
                 label = 'Joint ' + str(j + 1)
                 if ax_pos is not None:
                     ax[ax_pos].plot(self._time[:time_max_index], joint_pos[j][:time_max_index], color=color,
@@ -208,6 +223,10 @@ class TrajectoryPlotter:
                     ax[ax_jerk].plot(self._sub_time[:sub_time_max_index], joint_sub_jerk[j][:sub_time_max_index],
                                      color=color, linestyle=linestyle, label=label)
 
+                if ax_violation is not None:
+                    ax[ax_violation].plot(self._time[:time_max_index-1], joint_violation[j][:time_max_index],
+                                          color=color, linestyle=linestyle, label=label)
+
         for i in range(len(ax)):
             if self._plot_time_limits is None:
                 ax[i].set_xlim([0, self._time[-1]])  
@@ -225,7 +244,7 @@ class TrajectoryPlotter:
         fig.set_size_inches((24.1, 13.5), forward=False)
         plt.show()
 
-    def add_data_point(self, current_acc, acc_range=None):
+    def add_data_point(self, current_acc, acc_range=None, violation_code=None):
         self._time.append(self._time[-1] + self._time_step)
         last_acc = self._current_acc.copy()
         last_vel = self._current_vel.copy()
@@ -233,6 +252,7 @@ class TrajectoryPlotter:
         self._current_acc = current_acc
         self._current_jerk = (self._current_acc - last_acc) / self._time_step
         self._jerk.append(normalize(self._current_jerk, self._jerk_limits_min_max))
+        self._violation.append(violation_code)
 
         self._current_acc_limits.append(normalize_batch(acc_range.T, self._acc_limits_min_max).T)
 
@@ -264,7 +284,8 @@ class TrajectoryPlotter:
         joint_sub_data = {'pos': np.swapaxes(self._sub_pos, 0, 1),
                           'vel': np.swapaxes(self._sub_vel, 0, 1),
                           'acc': np.swapaxes(self._sub_acc, 0, 1),
-                          'jerk': np.swapaxes(self._sub_jerk, 0, 1)}
+                          'jerk': np.swapaxes(self._sub_jerk, 0, 1),
+                          'violation_code': np.swapaxes(self._violation, 0, 1)}
 
         trajectory_summary = {}
 

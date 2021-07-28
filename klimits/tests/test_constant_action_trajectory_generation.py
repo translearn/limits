@@ -47,10 +47,15 @@ def test_max_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits
 
     for key, value in trajectory_summary.items():
         for joint_index in range(len(value)):
-            check.greater(value[joint_index]['min'], -1.005,
-                          "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min']))
-            check.less(value[joint_index]['max'], 1.005,
-                       "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
+            if key == "violation_code":
+                check.less(value[joint_index]['max'], 1.0,
+                           "max violation code, joint {}, value {}".format(joint_index, value[joint_index]['max']))
+            else:
+                check.greater(value[joint_index]['min'], -1.005,
+                              "min {} violation, joint {}, value {}".format(key, joint_index,
+                                                                            value[joint_index]['min']))
+                check.less(value[joint_index]['max'], 1.005,
+                           "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
 
     for joint_index in range(len(trajectory_summary['pos'])):
         check.greater(trajectory_summary['pos'][joint_index]['final'], 0.96,
@@ -101,10 +106,15 @@ def test_min_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits
 
     for key, value in trajectory_summary.items():
         for joint_index in range(len(value)):
-            check.greater(value[joint_index]['min'], -1.005,
-                          "min {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['min']))
-            check.less(value[joint_index]['max'], 1.005,
-                       "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
+            if key == "violation_code":
+                check.less(value[joint_index]['max'], 1.0,
+                           "max violation code, joint {}, value {}".format(joint_index, value[joint_index]['max']))
+            else:
+                check.greater(value[joint_index]['min'], -1.005,
+                              "min {} violation, joint {}, value {}".format(key, joint_index,
+                                                                            value[joint_index]['min']))
+                check.less(value[joint_index]['max'], 1.005,
+                           "max {} violation, joint {}, value {}".format(key, joint_index, value[joint_index]['max']))
 
     for joint_index in range(len(trajectory_summary['pos'])):
         check.less(trajectory_summary['pos'][joint_index]['final'], -0.96,

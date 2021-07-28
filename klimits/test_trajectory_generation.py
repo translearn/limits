@@ -74,7 +74,9 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
                                                acc_limits=acc_limits,
                                                jerk_limits=jerk_limits,
                                                plot_joint=plot_joint,
-                                               plot_safe_acc_limits=plot_safe_acc_limits)
+                                               plot_safe_acc_limits=plot_safe_acc_limits,
+                                               plot_violation=False)
+
         trajectory_plotter.reset_plotter(current_position)
 
     if not use_random_actions:
@@ -85,10 +87,10 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
     for j in range(round(trajectory_duration / time_step)):
 
         # calculate the range of valid actions
-        safe_action_range, _ = acc_limitation.calculate_valid_acceleration_range(current_position,
-                                                                                 current_velocity,
-                                                                                 current_acceleration,
-                                                                                 time_step_counter=j)
+        safe_action_range, violation_code = acc_limitation.calculate_valid_acceleration_range(current_position,
+                                                                                              current_velocity,
+                                                                                              current_acceleration,
+                                                                                              time_step_counter=j)
         # generate actions in range [-1, 1] for each joint
         # Note: Action calculation is normally performed by a neural network
         if use_random_actions:
@@ -97,7 +99,7 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
         next_acceleration = denormalize(action, safe_action_range.T)
 
         if not no_plot or return_summary:
-            trajectory_plotter.add_data_point(next_acceleration, safe_action_range)
+            trajectory_plotter.add_data_point(next_acceleration, safe_action_range, violation_code)
 
         next_position = calculate_end_position(current_acceleration, next_acceleration, current_velocity,
                                                current_position, time_step)
