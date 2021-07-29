@@ -71,7 +71,7 @@ double pos_all_bounded_vel_discrete_j_n_u_plus_1(double j_min, double j_max, dou
 double pos_all_tv0(double j_min, double a_0, double a_1, double a_min, double v_0, double t_s, double t_n_a_min) {
 
    double result;
-   result = (1.0/2.0)*(-2*a_0*t_s + 2*a_min*(t_s + t_n_a_min) + j_min*pow2(t_s) - j_min*pow2(t_n_a_min) + t_s*(a_0 - a_1) + 2*t_s*(a_1 - j_min*t_s) - 2*t_n_a_min*(a_1 - j_min*t_s) - 2*v_0 - pow2(t_n_a_min)*(a_1 - a_min - j_min*t_s + j_min*t_n_a_min)/t_s + 2*t_n_a_min*(a_1*t_s + a_1*t_n_a_min - a_min*t_n_a_min - j_min*pow2(t_s) + j_min*pow2(t_n_a_min))/t_s + pow(t_s + t_n_a_min, 2)*(a_1 - a_min - j_min*t_s + j_min*t_n_a_min)/t_s - (2*t_s + 2*t_n_a_min)*(a_1*t_s + a_1*t_n_a_min - a_min*t_n_a_min - j_min*pow2(t_s) + j_min*pow2(t_n_a_min))/t_s)/a_min;
+   result = (1.0/2.0)*(-2*a_0*t_s + 2*a_min*(t_s + t_n_a_min) + j_min*pow2(t_s) - j_min*pow2(t_n_a_min) + t_s*(a_0 - a_1) + 2*t_s*(a_1 - j_min*t_s) - 2*t_n_a_min*(a_1 - j_min*t_s) - 2*v_0 - pow2(t_n_a_min)*(a_1 - a_min - j_min*t_s + j_min*t_n_a_min)/t_s + 2*t_n_a_min*(a_1*t_s + a_1*t_n_a_min - a_min*t_n_a_min - j_min*pow2(t_s) + j_min*pow2(t_n_a_min))/t_s + pow2(t_s + t_n_a_min)*(a_1 - a_min - j_min*t_s + j_min*t_n_a_min)/t_s - (2*t_s + 2*t_n_a_min)*(a_1*t_s + a_1*t_n_a_min - a_min*t_n_a_min - j_min*pow2(t_s) + j_min*pow2(t_n_a_min))/t_s)/a_min;
    return result;
 
 }
@@ -79,7 +79,7 @@ double pos_all_tv0(double j_min, double a_0, double a_1, double a_min, double v_
 double pos_first_a1(double a_0, double v_0, double t_s, double t_v0) {
 
    double result;
-   result = a_0 - 2*t_s*(a_0*t_v0 + v_0)/pow(t_v0, 2);
+   result = a_0 - 2*t_s*(a_0*t_v0 + v_0)/pow2(t_v0);
    return result;
 
 }
@@ -103,7 +103,7 @@ double pos_first_tv0_min(double a_0, double v_0, double p_0, double p_max) {
 double pos_min_jerk_a1(double j_min, double a_0, double v_0, double t_s, double t_v0) {
 
    double result;
-   result = (a_0*t_s + j_min*pow2(t_s) - 2*j_min*t_s*t_v0 + j_min*pow(t_v0, 2) + 2*v_0)/(t_s - 2*t_v0);
+   result = (a_0*t_s + j_min*pow2(t_s) - 2*j_min*t_s*t_v0 + j_min*pow2(t_v0) + 2*v_0)/(t_s - 2*t_v0);
    return result;
 
 }
@@ -143,7 +143,7 @@ double pos_min_jerk_bounded_vel_discrete_j_n_u_plus_1(double j_min, double j_max
 double pos_min_jerk_tv0_0(double j_min, double a_0, double v_0, double p_0, double p_max, double t_s) {
 
    double result;
-   result = 2*t_s*(-2*t_s*((3.0/64.0)*pow2(t_s) - 1.0/16.0*(-3*a_0*t_s + j_min*pow2(t_s) - 6*v_0)/j_min) + (1.0/4.0)*(2*a_0*pow2(t_s) - 12*p_0 + 12*p_max)/j_min) + (1.0/12.0)*pow(-3.0/2.0*pow2(t_s) + (-3*a_0*t_s + j_min*pow2(t_s) - 6*v_0)/j_min, 2) + (6*p_0*t_s - 6*p_max*t_s + 2*pow2(t_s)*v_0)/j_min;
+   result = 2*t_s*(-2*t_s*((3.0/64.0)*pow2(t_s) - 1.0/16.0*(-3*a_0*t_s + j_min*pow2(t_s) - 6*v_0)/j_min) + (1.0/4.0)*(2*a_0*pow2(t_s) - 12*p_0 + 12*p_max)/j_min) + (1.0/12.0)*pow2(-3.0/2.0*pow2(t_s) + (-3*a_0*t_s + j_min*pow2(t_s) - 6*v_0)/j_min) + (6*p_0*t_s - 6*p_max*t_s + 2*pow2(t_s)*v_0)/j_min;
    return result;
 
 }
@@ -167,7 +167,7 @@ double complex pos_min_jerk_tv0_2(double j_min, double a_0, double v_0, double p
 double pos_reduced_jerk_a1(double j_min, double a_0, double a_min, double v_0, double t_s, double t_v0, double t_n_a_min) {
 
    double result;
-   result = (a_0*pow2(t_s) + a_min*pow2(t_n_a_min) - 2*a_min*t_n_a_min*t_v0 + a_min*pow(t_v0, 2) + j_min*pow3(t_s) - 2*j_min*pow2(t_s)*t_v0 + j_min*t_s*pow(t_v0, 2) - j_min*pow3(t_n_a_min) + 2*j_min*pow2(t_n_a_min)*t_v0 - j_min*t_n_a_min*pow(t_v0, 2) + 2*t_s*v_0)/(pow2(t_s) - 2*t_s*t_v0 + pow2(t_n_a_min) - 2*t_n_a_min*t_v0 + pow(t_v0, 2));
+   result = (a_0*pow2(t_s) + a_min*pow2(t_n_a_min) - 2*a_min*t_n_a_min*t_v0 + a_min*pow2(t_v0) + j_min*pow3(t_s) - 2*j_min*pow2(t_s)*t_v0 + j_min*t_s*pow2(t_v0) - j_min*pow3(t_n_a_min) + 2*j_min*pow2(t_n_a_min)*t_v0 - j_min*t_n_a_min*pow2(t_v0) + 2*t_s*v_0)/(pow2(t_s) - 2*t_s*t_v0 + pow2(t_n_a_min) - 2*t_n_a_min*t_v0 + pow2(t_v0));
    return result;
 
 }
@@ -319,7 +319,7 @@ double complex pos_upper_bound_a1_min_5(double j_min, double a_0, double a_min, 
 double pos_upper_bound_tv0(double j_min, double a_0, double a_1, double a_min, double v_0, double t_s) {
 
    double result;
-   result = (1.0/2.0)*(-2*a_0*t_s + 2*a_min*(t_s - (a_1 - a_min)/j_min) + j_min*pow2(t_s) - j_min*pow(t_s - (a_1 - a_min)/j_min, 2) + t_s*(a_0 - a_1) + 2*t_s*(a_1 - j_min*t_s) - 2*v_0 - (2*a_1 - 2*j_min*t_s)*(t_s - (a_1 - a_min)/j_min))/a_min;
+   result = (1.0/2.0)*(-2*a_0*t_s + 2*a_min*(t_s - (a_1 - a_min)/j_min) + j_min*pow2(t_s) - j_min*pow2(t_s - (a_1 - a_min)/j_min) + t_s*(a_0 - a_1) + 2*t_s*(a_1 - j_min*t_s) - 2*v_0 - (2*a_1 - 2*j_min*t_s)*(t_s - (a_1 - a_min)/j_min))/a_min;
    return result;
 
 }
