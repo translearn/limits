@@ -16,7 +16,7 @@ The package can be installed by running
 
     pip install klimits
 
-## Trajectory generation [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/translearn/notebooks/blob/main/klimits_demo.ipynb)
+## Trajectory generation &nbsp; [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/translearn/notebooks/blob/main/klimits_demo.ipynb)
 
 To generate a random trajectory with limited jerk, acceleration, velocity and position run
 
@@ -46,7 +46,7 @@ This library is used by [safeMotions](https://github.com/translearn/safemotions)
 
 <p align="center">
 <a href="https://www.youtube.com/watch?v=pzXOxE7y7ws">
-<img src="https://img.youtube.com/vi/pzXOxE7y7ws/0.jpg" alt="video">
+<img src="https://yt-embed.herokuapp.com/embed?v=pzXOxE7y7ws" alt="video">
 </a>
 </p>
 

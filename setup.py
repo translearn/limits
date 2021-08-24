@@ -2,7 +2,17 @@ from setuptools import setup
 from setuptools import Extension
 from Cython.Build import cythonize
 import os
+import re
 import numpy as np
+
+
+def get_version():
+    with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                           'klimits', '__init__.py'), encoding='utf-8') as f:
+        init_file = f.read()
+        version = re.search(r"__version__\W*=\W*'([^']+)'", init_file)
+        return version.group(1) if version is not None else '0.0.0'
+
 
 with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:
     readme_file = f.read()
@@ -15,6 +25,7 @@ else:
     os_extra_compile_args = []
     os_extra_link_args = []
 
+
 ext_mods = [Extension(
     '_klimits', ['klimits/_klimits/_klimits_module.pyx', 'klimits/_klimits/_klimits_code.c'],
     include_dirs=[np.get_include()],
@@ -24,7 +35,7 @@ ext_mods = [Extension(
     extra_link_args=['-fopenmp'] + os_extra_link_args
 )]
 setup(name='klimits',
-      version='1.1.1',
+      version=get_version(),
       packages=['klimits'],
       author='Jonas C. Kiemel',
       author_email='jonas.kiemel@kit.edu',
