@@ -46,7 +46,7 @@ This library is used by [safeMotions](https://github.com/translearn/safemotions)
 
 <p align="center">
 <a href="https://www.youtube.com/watch?v=pzXOxE7y7ws">
-<img src="https://yt-embed.herokuapp.com/embed?v=pzXOxE7y7ws" alt="video">
+<img src="https://user-images.githubusercontent.com/51738372/130786416-15293002-0b53-410d-80c7-70a12b91abb7.png" alt="video">
 </a>
 </p>
 
