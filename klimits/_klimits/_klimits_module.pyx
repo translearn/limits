@@ -294,6 +294,13 @@ cpdef normalize_batch(double[:, :] value, double[:, :] value_range):
         for j in range(num_joints):
             normalized_value[i, j] =  -1 + 2 * (value[i, j] - value_range[0, j]) / (value_range[1, j] - value_range[0, j])
 
+    # TODO: check if this code is faster
+    # cdef double joint_range
+    # for j in range(num_joints):
+    #    joint_range = value_range[1, j] - value_range[0, j]
+    #    for i in range(num_steps):
+    #        normalized_value[i, j] =  -1 + 2 * (value[i, j] - value_range[0, j]) / (joint_range)
+
     return normalized_value.base
 
 cpdef normalize_batch_parallel(double[:, :] value, double[:, :] value_range):

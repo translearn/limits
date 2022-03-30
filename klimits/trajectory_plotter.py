@@ -34,7 +34,7 @@ class TrajectoryPlotter:
         self._plot_time_limits = plot_time_limits
         self._plot_violation = plot_violation
 
-        self._plot_num_sub_time_steps = int(1000 * time_step)
+        self._plot_num_sub_time_steps = max(int(1000 * time_step), 2)
         self._time_step_counter = None
         self._current_jerk = None
         self._current_acc = None
