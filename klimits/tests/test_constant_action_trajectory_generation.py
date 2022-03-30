@@ -4,7 +4,7 @@ import pytest_check as check
 from klimits.test_trajectory_generation import test_trajectory_generation
 
 
-@pytest.mark.parametrize("time_step", [0.05, 0.1])
+@pytest.mark.parametrize("time_step", [0.001, 0.01, 0.05, 0.1])
 @pytest.mark.parametrize("pos_limits", [[[-2.96705972839, 2.96705972839],
                                          [-2.09439510239, 2.09439510239],
                                          [-2.96705972839, 2.96705972839],
@@ -63,7 +63,7 @@ def test_max_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits
                                                                        trajectory_summary['pos'][joint_index]['final']))
 
 
-@pytest.mark.parametrize("time_step", [0.05, 0.1])
+@pytest.mark.parametrize("time_step", [0.001, 0.01, 0.05, 0.1])
 @pytest.mark.parametrize("pos_limits", [[[-2.96705972839, 2.96705972839],
                                          [-2.09439510239, 2.09439510239],
                                          [-2.96705972839, 2.96705972839],
