@@ -876,11 +876,11 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
 
     if limit_velocity:
         if not braking_trajectory and (current_acc < 0 and (
-                current_vel < vel_limits[0] + 0.5 * (current_acc ** 2 * t_s) / (acc_limits[1] - current_acc))):
+                current_vel + 1e-8 < vel_limits[0] + 0.5 * (current_acc ** 2 * t_s) / (acc_limits[1] - current_acc))):
             acc_range_dynamic_vel[0] = acc_limits[1]
         else:
             if not braking_trajectory and (current_acc > 0 and (
-                    current_vel > vel_limits[1] - 0.5 * (current_acc ** 2 * t_s) / (
+                    current_vel - 1e-8 > vel_limits[1] - 0.5 * (current_acc ** 2 * t_s) / (
                     current_acc - acc_limits[0]))):
                 acc_range_dynamic_vel[1] = acc_limits[0]
             else:
@@ -894,7 +894,7 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
                             or (j == 1 and (current_vel + 0.5 * current_acc * t_s) >= vel_limits[1]):
 
                         second_phase = False
-                        if fabs(current_acc) < 1e-8:
+                        if fabs(current_acc) < 1e-8 or fabs(vel_limits[j] - current_vel) < 1e-8:
                             acc_range_dynamic_vel[j] = 0
                         else:
                             if vel_limits[j] != current_vel:
@@ -1275,6 +1275,7 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
     cdef double t_v0_out
     cdef double complex a_1_out_complex
     cdef double a_1_out
+    cdef double a_min_in_initial
 
     if min_max == 0:
         a_1_out_complex = pos_upper_bound_a1_min_2(j_min_in, a_0_in, a_min_in, v_0_in, p_0_in, p_max_in, t_s_in)
@@ -1294,6 +1295,7 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
                                                  (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
             a_1_out = a_1_out_complex.real
         else:
+            a_min_in_initial = a_min_in
             if min_max == 0:
                 a_min_in = a_min_in - 0.02
             else:
@@ -1320,7 +1322,34 @@ cdef (double, double) position_border_case_upper_bound(int min_max, double j_min
                                                          (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
                     a_1_out = a_1_out_complex.real
                 else:
-                    a_1_out = nan
+                    if min_max == 0:
+                        v_0_in = v_0_in - 1e-4
+                    else:
+                        v_0_in = v_0_in + 1e-4
+                    if min_max == 0:
+                        a_1_out_complex = pos_upper_bound_a1_min_2(j_min_in, a_0_in, a_min_in_initial, v_0_in, p_0_in,
+                                                                   p_max_in, t_s_in)
+                    else:
+                        a_1_out_complex = pos_upper_bound_a1_max_2(j_min_in, a_0_in, a_min_in_initial, v_0_in, p_0_in,
+                                                                   p_max_in, t_s_in)
+
+                    if fabs(a_1_out_complex.imag) < 1e-3 and ((min_max == 0 and a_1_out_complex.real > a_1_max - 1e-5) or
+                                                             (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
+                        a_1_out = a_1_out_complex.real
+                    else:
+                        if min_max == 0:
+                            a_1_out_complex = pos_upper_bound_a1_min_5(j_min_in, a_0_in, a_min_in_initial, v_0_in,
+                                                                       p_0_in, p_max_in, t_s_in)
+                        else:
+                            a_1_out_complex = pos_upper_bound_a1_max_5(j_min_in, a_0_in, a_min_in_initial, v_0_in,
+                                                                       p_0_in, p_max_in, t_s_in)
+
+                        if fabs(a_1_out_complex.imag) < 1e-3 and (
+                                (min_max == 0 and a_1_out_complex.real > a_1_max - 1e-5) or
+                                (min_max == 1 and a_1_out_complex.real < a_1_max + 1e-5)):
+                            a_1_out = a_1_out_complex.real
+                        else:
+                            a_1_out = nan
 
     if compute_t_v0:
         t_v0_out = pos_upper_bound_tv0(j_min_in, a_0_in, a_1_out, a_min_in, v_0_in, t_s_in)
@@ -1460,8 +1489,8 @@ cdef (double, double, double) position_bounded_velocity_discrete_min_jerk_phase_
                                                                           v_0_in, p_0_in, p_max_in,
                                                                           t_s_in, t_star_in, t_n_u_in)
 
-        if (min_max == 0 and j_max_in - 1e-6 <= j_n_u_plus_1_out <= j_min_in + 1e-6) or \
-                (min_max == 1 and j_min_in - 1e-6 <= j_n_u_plus_1_out <= j_max_in + 1e-6):
+        if (min_max == 0 and j_max_in - 1e-4 <= j_n_u_plus_1_out <= j_min_in + 1e-4) or \
+                (min_max == 1 and j_min_in - 1e-4 <= j_n_u_plus_1_out <= j_max_in + 1e-4):
 
             a_1_out = pos_min_jerk_bounded_vel_discrete_a1(j_min_in, j_max_in, j_n_u_plus_1_out, a_0_in,
                                                            v_0_in, t_s_in, t_star_in, t_n_u_in)
