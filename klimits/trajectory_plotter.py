@@ -85,14 +85,14 @@ class TrajectoryPlotter:
     def trajectory_time(self):
         return self._time[-1]
 
-    def reset_plotter(self, initial_joint_position):
+    def reset_plotter(self, initial_joint_position, initial_joint_velocity, initial_joint_acceleration):
 
         self._time_step_counter = 0
         self._episode_counter = self._episode_counter + 1
 
-        self._current_acc = self._zero_vector.copy()
-        self._current_vel = self._zero_vector.copy()
-        self._current_pos = np.array(initial_joint_position.copy())
+        self._current_acc = np.array(initial_joint_acceleration)
+        self._current_vel = np.array(initial_joint_velocity)
+        self._current_pos = np.array(initial_joint_position)
 
         self._pos = []
         self._vel = []

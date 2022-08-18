@@ -25,8 +25,9 @@ from klimits import get_num_threads
 
 def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, pos_limit_factor, vel_limit_factor,
                                acc_limit_factor, jerk_limit_factor, trajectory_duration,
-                               constant_action=None, num_threads=1, plot_joint=None, no_plot=False,
-                               plot_safe_acc_limits=False, seed=None, return_summary=False):
+                               constant_action=None, pos_start=None, vel_start=None, acc_start=None, num_threads=1,
+                               plot_joint=None, no_plot=False, plot_safe_acc_limits=False, plot_violation=False,
+                               seed=None, return_summary=False):
     acc_limits = [[acc_limit_factor * acc_limit[0], acc_limit_factor * acc_limit[1]] for acc_limit in acc_limits]
     max_jerks = [(acc_limit[1] - acc_limit[0]) / time_step for acc_limit in acc_limits]
     jerk_limits = [[-jerk_limit_factor * max_jerk, jerk_limit_factor * max_jerk] for max_jerk in max_jerks]
@@ -57,9 +58,9 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
                                           normalize_acc_range=False, num_threads=num_threads)
 
     num_joints = len(pos_limits)
-    current_position = np.zeros(num_joints)
-    current_velocity = np.zeros(num_joints)
-    current_acceleration = np.zeros(num_joints)
+    current_position = np.zeros(num_joints) if pos_start is None else np.array(pos_start)
+    current_velocity = np.zeros(num_joints) if vel_start is None else np.array(vel_start)
+    current_acceleration = np.zeros(num_joints) if acc_start is None else np.array(acc_start)
 
     if not no_plot or return_summary:
         if plot_joint is None:
@@ -75,9 +76,9 @@ def test_trajectory_generation(time_step, pos_limits, vel_limits, acc_limits, po
                                                jerk_limits=jerk_limits,
                                                plot_joint=plot_joint,
                                                plot_safe_acc_limits=plot_safe_acc_limits,
-                                               plot_violation=False)
+                                               plot_violation=plot_violation)
 
-        trajectory_plotter.reset_plotter(current_position)
+        trajectory_plotter.reset_plotter(current_position, current_velocity, current_acceleration)
 
     if not use_random_actions:
         action = np.full(shape=len(pos_limits), fill_value=constant_action)
@@ -155,11 +156,20 @@ if __name__ == '__main__':
     parser.add_argument('--constant_action', type=float, default=None, help="a constant action [-1, 1] that "
                                                                             "is used at each decision step. If not "
                                                                             "specified, random actions are selected")
+    parser.add_argument('--pos_start', type=json.loads, default=None, help="start position [num_joint] e.g. "
+                                                                           "'[0.25, -0.75]'. Zero if not given.")
+    parser.add_argument('--vel_start', type=json.loads, default=None, help="start velocity [num_joint] e.g. "
+                                                                           "'[-0.25, 0.75]'. Zero if not given.")
+    parser.add_argument('--acc_start', type=json.loads, default=None, help="start acceleration [num_joint] e.g. "
+                                                                           "'[2.0, -1.0]'. Zero if not given.")
     parser.add_argument('--plot_joint', type=json.loads, default=None, help="whether to plot the trajectory of the "
                                                                             "corresponding joint e.g. '[1, 0]'")
     parser.add_argument('--plot_safe_acc_limits', action='store_true', default=False, help="plot the range of safe "
                                                                                            "accelerations with dashed "
                                                                                            "lines")
+    parser.add_argument('--plot_violation', action='store_true', default=False, help="indicate potential "
+                                                                                     "inconsistencies when calculating "
+                                                                                     "the safe acc limits")
     parser.add_argument('--no_plot', action='store_true', default=False, help="if set, no plot is generated")
     parser.add_argument('--num_threads', type=int, default=None, help="the number of threads used for parallel "
                                                                       "execution. If not specified, the number of "
@@ -234,6 +244,13 @@ if __name__ == '__main__':
     num_threads = args.num_threads  # number of threads to use for the computation
     no_plot = args.no_plot  # whether to plot the generated trajectory
 
+    # Specify an initial kinematic state. If not given, no initial movement is assumed.
+    pos_start = args.pos_start
+    vel_start = args.vel_start
+    acc_start = args.acc_start
+
+    plot_violation = args.plot_violation  # indicate potential inconsistencies when calculating the safe acc limits
+
     #  end of user settings -------------------------------------------------------------------------------
 
     test_trajectory_generation(time_step=time_step, pos_limits=pos_limits, vel_limits=vel_limits,
@@ -241,6 +258,8 @@ if __name__ == '__main__':
                                vel_limit_factor=vel_limit_factor, acc_limit_factor=acc_limit_factor,
                                jerk_limit_factor=jerk_limit_factor, trajectory_duration=trajectory_duration,
                                constant_action=constant_action,
+                               pos_start=pos_start, vel_start=vel_start, acc_start=acc_start,
                                num_threads=num_threads, plot_joint=plot_joint,
                                no_plot=no_plot, plot_safe_acc_limits=plot_safe_acc_limits,
+                               plot_violation=plot_violation,
                                seed=seed, return_summary=False)
