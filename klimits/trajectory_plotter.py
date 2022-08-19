@@ -85,13 +85,15 @@ class TrajectoryPlotter:
     def trajectory_time(self):
         return self._time[-1]
 
-    def reset_plotter(self, initial_joint_position, initial_joint_velocity, initial_joint_acceleration):
+    def reset_plotter(self, initial_joint_position, initial_joint_velocity=None, initial_joint_acceleration=None):
 
         self._time_step_counter = 0
         self._episode_counter = self._episode_counter + 1
 
-        self._current_acc = np.array(initial_joint_acceleration)
-        self._current_vel = np.array(initial_joint_velocity)
+        self._current_acc = np.array(initial_joint_acceleration) \
+            if initial_joint_acceleration is not None else self._zero_vector.copy()
+        self._current_vel = np.array(initial_joint_velocity) \
+            if initial_joint_velocity is not None else self._zero_vector.copy()
         self._current_pos = np.array(initial_joint_position)
 
         self._pos = []
@@ -148,8 +150,8 @@ class TrajectoryPlotter:
 
         if ax_violation is not None:
             ax[ax_violation].set_ylabel('Ignored')
-            ax[ax_violation].set_yticks(np.arange(5))
-            ax[ax_violation].set_yticklabels(['None', 'Jerk', 'Vel', 'Pos', 'Acc'])
+            ax[ax_violation].set_yticks(np.arange(7))
+            ax[ax_violation].set_yticklabels(['None', 'Jerk', 'Vel', 'Pos', 'Acc', 'Max Vel', 'Max Pos'])
 
         joint_pos = np.swapaxes(self._pos, 0, 1)
         joint_vel = np.swapaxes(self._vel, 0, 1)

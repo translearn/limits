@@ -979,6 +979,12 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
 
                     if p_0 == p_max and a_0 == 0 and v_0 == 0:
                         acc_range_dynamic_pos[j] = 0
+                    else:              
+                        if (j == 0 and p_0 < p_max) or (j == 1 and p_0 > p_max):
+                            # p_0 is already outside the position limits
+                            # compute the acceleration that gets the position inside the bounds
+                            # (neglecting the condition that the velocity should also be zero at t_1)
+                            acc_range_dynamic_pos[j] = 6 * (p_max - p_0 - v_0 * t_s) / t_s ** 2 - 2 * a_0
             else:
 
                 t_n_a_min = t_s * (1 + floor((a_min - a_1_min_jerk) / (j_min * t_s)))
@@ -1004,6 +1010,11 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
                         if t_a_min_upper_bound < t_s:
                             if t_a_min_upper_bound / t_s > 0.999:
                                 t_a_min_upper_bound = t_s
+                            else:
+                                # t_n_a_min = 0; no feasible solution found, a_1_upper_bound < a_min
+                                acc_range_dynamic_pos[j] = a_1_upper_bound
+                                # the acceleration is outside of the acc_limits so a violation will be triggered
+                                continue
 
                         t_n_a_min = t_s * floor(t_a_min_upper_bound / t_s)
 
@@ -1216,6 +1227,13 @@ cdef (double, double, int) calculate_valid_acceleration_range_per_joint(int join
     
     if (acc_range_max < acc_limits[0] - 1e-6) or (acc_range_min > acc_limits[1] + 1e-6):
         limit_violation_code = 4
+
+    if limit_violation_code == 0:
+        # check initial conditions
+        if (current_pos < pos_limits[0] - 1e-6) or (current_pos > pos_limits[1] + 1e-6):
+            limit_violation_code = 6
+        elif (current_vel < vel_limits[0] - 1e-6) or (current_vel > vel_limits[1] + 1e-6):
+            limit_violation_code = 5
 
     return acc_range_min_clipped, acc_range_max_clipped, limit_violation_code
 
