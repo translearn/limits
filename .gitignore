@@ -3,6 +3,7 @@ build/
 klimits/build/
 dist/
 klimits.egg-info/
+.vscode
 
 # ignore pycache
 __pycache__/
