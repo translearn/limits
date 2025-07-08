@@ -24,7 +24,7 @@ jobs:
           python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: cp36-* cp37-* cp38-*
-          CIBW_BEFORE_BUILD: python -m pip install cython
+          CIBW_BEFORE_BUILD: python -m pip install cython==3.0.12
           
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
