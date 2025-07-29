@@ -39,9 +39,17 @@ for further details on the optional arguments.
 
 ## Further reading
 
-A preprint of the corresponding ICRA 2021 publication is available at [arXiv.org](https://arxiv.org/abs/2011.00563). \
+Further details can be found in the following [publication](https://arxiv.org/abs/2011.00563):
+```
+  title={Learning Robot Trajectories subject to Kinematic Joint Constraints}, 
+  booktitle={2021 IEEE International Conference on Robotics and Automation (ICRA)},
+  author={Kiemel, Jonas and Kröger, Torsten},
+  year={2021},
+  pages={4799-4805},
+  doi={10.1109/ICRA48506.2021.9561159}
+```
 Further information on the implementation can be found [here](https://www.researchgate.net/publication/350451653_Background_Knowledge_for_Learning_Robot_Trajectories_subject_to_Kinematic_Joint_Constraints). \
-This library is used by [safeMotions](https://github.com/translearn/safemotions) to learn collision-free reaching tasks via reinforcement learning.
+This library is used by [safeMotions](https://github.com/translearn/safemotions), [safeMotionsRisk](https://github.com/translearn/safeMotionsRisk) and [pathTracking](https://github.com/translearn/pathTracking) to learn optimized robot motions via reinforcement learning.
 
 ## Video
 
